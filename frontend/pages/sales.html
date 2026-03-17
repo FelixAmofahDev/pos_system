@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS System - Sales</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="page-layout" style="display: grid; grid-template-columns: 250px 1fr; min-height: 100vh;">
+    <aside class="sidebar" style="border-right: 1px solid #e2e8f0; padding: 1.5rem; background: white;">
+      <h3 style="color: #2563eb; margin-bottom: 1.5rem;">🏪 POS</h3>
+      <nav>
+        <ul style="list-style: none;">
+          <li style="margin-bottom: 0.5rem;"><a href="dashboard.html" style="display: block; padding: 0.75rem; color: #64748b; text-decoration: none;">📊 Dashboard</a></li>
+          <li style="margin-bottom: 0.5rem;"><a href="pos.html" style="display: block; padding: 0.75rem; color: #64748b; text-decoration: none;">🛒 POS</a></li>
+          <li style="margin-bottom: 0.5rem;"><a href="products.html" style="display: block; padding: 0.75rem; color: #64748b; text-decoration: none;">📦 Products</a></li>
+          <li style="margin-bottom: 0.5rem;"><a href="customers.html" style="display: block; padding: 0.75rem; color: #64748b; text-decoration: none;">👥 Customers</a></li>
+          <li style="margin-bottom: 0.5rem;"><a href="sales.html" style="display: block; padding: 0.75rem; color: #2563eb; background: #dbeafe; text-decoration: none;">📋 Sales</a></li>
+          <li style="margin-bottom: 0.5rem;"><a href="reports.html" style="display: block; padding: 0.75rem; color: #64748b; text-decoration: none;">📈 Reports</a></li>
+        </ul>
+      </nav>
+    </aside>
+    <div style="padding: 2rem;">
+      <h1>📋 Sales History</h1>
+      <p style="color: #64748b; margin-top: 1rem;">Sales history page (coming soon)</p>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script>
+    requireRole(['admin', 'manager']);
+  </script>
+</body>
+</html>
