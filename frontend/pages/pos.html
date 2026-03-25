@@ -323,19 +323,19 @@
       <div class="cart-summary">
         <div class="summary-row">
           <span>Subtotal:</span>
-          <span id="subtotal">$0.00</span>
+          <span id="subtotal">GH₵0.00</span>
         </div>
         <div class="summary-row">
           <span>Discount:</span>
-          <span id="discount">$0.00</span>
+          <span id="discount">GH₵0.00</span>
         </div>
         <div class="summary-row">
           <span>Tax:</span>
-          <span id="tax">$0.00</span>
+          <span id="tax">GH₵0.00</span>
         </div>
         <div class="summary-row total">
           <span>Total:</span>
-          <span id="total">$0.00</span>
+          <span id="total">GH₵0.00</span>
         </div>
       </div>
       <div class="cart-actions">
@@ -370,10 +370,17 @@
           <select id="paymentMethod" required>
             <option value="">Select payment method</option>
             <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="mobile_money">Mobile Money</option>
+            <option value="card">Card (Paystack)</option>
+            <option value="mobile_money">Mobile Money (Paystack)</option>
             <option value="check">Check</option>
           </select>
+        </div>
+
+        <div id="paystackFields" style="display: none;">
+          <div class="form-group">
+            <label for="customerEmail">Customer Email (Required for Paystack)</label>
+            <input type="email" id="customerEmail" placeholder="customer@example.com">
+          </div>
         </div>
 
         <div id="cashPaymentFields">
@@ -383,7 +390,7 @@
           </div>
           <div class="summary-row">
             <span>Change:</span>
-            <span id="changeAmount">$0.00</span>
+            <span id="changeAmount">GH₵0.00</span>
           </div>
         </div>
 
@@ -468,10 +475,16 @@
       // Payment method change
       document.getElementById('paymentMethod').addEventListener('change', (e) => {
         const cashFields = document.getElementById('cashPaymentFields');
+        const paystackFields = document.getElementById('paystackFields');
         if (e.target.value === 'cash') {
           cashFields.style.display = 'block';
+          paystackFields.style.display = 'none';
+        } else if (e.target.value === 'card' || e.target.value === 'mobile_money') {
+          cashFields.style.display = 'none';
+          paystackFields.style.display = 'block';
         } else {
           cashFields.style.display = 'none';
+          paystackFields.style.display = 'none';
         }
       });
 
@@ -501,7 +514,7 @@
         cart.push({
           product_id: productId,
           name: product.name,
-          price: product.price,
+          price: Number(product.price),
           quantity: 1,
           maxQuantity: product.quantity
         });
@@ -587,7 +600,7 @@
       const method = document.getElementById('paymentMethod').value;
       if (method !== 'cash') return;
 
-      const total = parseFloat(document.getElementById('total').textContent.replace('$', '')) || 0;
+      const total = parseFloat(document.getElementById('total').textContent.replace('GH₵', '')) || 0;
       const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
       const change = amountPaid - total;
 
@@ -599,6 +612,7 @@
 
       const paymentMethod = document.getElementById('paymentMethod').value;
       const customerPhone = document.getElementById('customerPhone').value;
+      const customerEmail = document.getElementById('customerEmail').value;
       const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
       const taxAmount = parseFloat(document.getElementById('taxAmount').value) || 0;
       const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
@@ -606,11 +620,88 @@
       const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const total = subtotal - discountAmount + taxAmount;
 
+      // Validate Paystack payments
+      if ((paymentMethod === 'card' || paymentMethod === 'mobile_money') && !customerEmail) {
+        showAlert('Email is required for Paystack payments', 'error');
+        return;
+      }
+
       if (paymentMethod === 'cash' && amountPaid < total) {
         showAlert('Insufficient amount paid', 'error');
         return;
       }
 
+      // Handle Paystack payment flow
+      if (paymentMethod === 'card' || paymentMethod === 'mobile_money') {
+        try {
+          const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+          showLoading(submitBtn);
+
+          // Get or create customer
+          let customerId = null;
+          if (customerPhone) {
+            try {
+              const customer = await api.getCustomerByPhone(customerPhone);
+              customerId = customer.customer_id;
+            } catch (e) {
+              // Customer doesn't exist, create new one
+              const newCustomer = await api.createCustomer(customerPhone, customerPhone);
+              customerId = newCustomer.data.customer_id;
+            }
+          }
+
+          // Create sale with pending payment
+          const saleData = {
+            customerId,
+            items: cart.map(item => ({
+              productId: item.product_id,
+              quantity: item.quantity
+            })),
+            discountAmount,
+            taxAmount,
+            paymentData: {
+              method: paymentMethod,
+              email: customerEmail,
+              amount: total,
+              notes: `${paymentMethod === 'card' ? 'Card' : 'Mobile Money'} payment via Paystack`
+            }
+          };
+
+          const saleResponse = await api.createSale(saleData);
+          const saleId = saleResponse.data.saleId;
+
+          // Initialize Paystack payment
+          const paymentInit = await api.initializePayment({
+            saleId: saleId,
+            amount: total,
+            email: customerEmail,
+            customerId: customerId
+          });
+
+          if (paymentInit.success && paymentInit.data.authorization_url) {
+            // Store pending sale info for verification after payment
+            sessionStorage.setItem('pendingSaleId', saleId);
+            sessionStorage.setItem('pendingSaleData', JSON.stringify({
+              cart: cart,
+              discountAmount,
+              taxAmount,
+              finalAmount: total
+            }));
+
+            // Redirect to Paystack
+            window.location.href = paymentInit.data.authorization_url;
+          } else {
+            showAlert('Failed to initialize payment', 'error');
+          }
+        } catch (error) {
+          showAlert('Error initializing payment: ' + error.message, 'error');
+        } finally {
+          hideLoading(document.querySelector('#checkoutForm button[type="submit"]'));
+        }
+        return;
+      }
+
+      // Handle Cash/Check payments (existing flow)
       try {
         const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
         showLoading(submitBtn);
@@ -661,6 +752,63 @@
       }
     });
 
+    // Handle Paystack payment return
+    function handlePaystackReturn() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reference = urlParams.get('reference');
+      const trx = urlParams.get('trx');
+      
+      if (reference || trx) {
+        const ref = reference || trx;
+        verifyPaymentAndComplete(ref);
+      }
+    }
+
+    async function verifyPaymentAndComplete(ref) {
+      try {
+        const verification = await api.verifyPayment(ref);
+
+        if (verification.success && verification.data && verification.data.status === 'completed') {
+          const saleId = sessionStorage.getItem('pendingSaleId');
+          const saleDataRaw = sessionStorage.getItem('pendingSaleData');
+
+          if (saleId) {
+            showAlert('Payment successful!', 'success');
+
+            // Generate receipt with stored data
+            if (saleDataRaw) {
+              const saleData = JSON.parse(saleDataRaw);
+              // Use the verified amount from Paystack
+              const finalSaleData = {
+                saleId: saleId,
+                finalAmount: verification.data.amount / 100 || saleData.finalAmount
+              };
+              await generateReceipt(finalSaleData);
+            }
+
+            // Clear cart
+            cart = [];
+            updateCart();
+            closeModal('checkoutModal');
+            document.getElementById('checkoutForm').reset();
+
+            // Clean up session storage
+            sessionStorage.removeItem('pendingSaleId');
+            sessionStorage.removeItem('pendingSaleData');
+          }
+        } else {
+          showAlert('Payment verification failed: ' + (verification.error || 'Unknown error'), 'error');
+        }
+      } catch (error) {
+        showAlert('Error verifying payment: ' + error.message, 'error');
+      }
+    }
+
+    // Check for Paystack return on page load
+    if (window.location.search.includes('reference') || window.location.search.includes('trx')) {
+      handlePaystackReturn();
+    }
+
     async function generateReceipt(saleData) {
       const receiptWindow = window.open('', '', 'width=400,height=600');
       const today = new Date().toLocaleDateString();
@@ -698,11 +846,11 @@
         html += `
           <tr>
             <td>${item.name}</td>
-            <td class="right">$${subtotal.toFixed(2)}</td>
+            <td class="right">GH₵${subtotal.toFixed(2)}</td>
           </tr>
           <tr>
             <td colspan="2" style="font-size: 10px; color: #666;">
-              ${item.quantity} x $${item.price.toFixed(2)}
+              ${item.quantity} x GH₵${item.price.toFixed(2)}
             </td>
           </tr>
         `;
@@ -711,7 +859,7 @@
       html += `
             <tr class="total">
               <td>Total:</td>
-              <td class="right">$${saleData.finalAmount.toFixed(2)}</td>
+              <td class="right">GH₵${saleData.finalAmount.toFixed(2)}</td>
             </tr>
           </table>
           <div class="separator">===============================</div>

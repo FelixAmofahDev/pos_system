@@ -182,6 +182,21 @@ class APIClient {
     return this.request(`/reports/payments/methods?startDate=${startDate}&endDate=${endDate}`);
   }
 
+  // Payment endpoints
+  async initializePayment(data) {
+    return this.request('/payments/initialize', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async verifyPayment(reference) {
+    return this.request('/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify({ reference })
+    });
+  }
+
   // Inventory endpoints
   async getLowStockProducts() {
     return this.request('/inventory/low-stock');
@@ -245,7 +260,7 @@ function closeModal(modalId) {
 function formatCurrency(amount) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD'
+    currency: 'GHS'
   }).format(amount);
 }
 
