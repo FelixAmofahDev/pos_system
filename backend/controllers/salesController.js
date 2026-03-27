@@ -15,6 +15,23 @@ class SalesController {
         return res.status(400).json({ error: 'Payment method and amount are required' });
       }
 
+      // Validate payment method
+      const validMethods = ['cash', 'card', 'mobile_money', 'check', 'paystack'];
+      if (!validMethods.includes(paymentData.method)) {
+        return res.status(400).json({ error: `Invalid payment method. Allowed: ${validMethods.join(', ')}` });
+      }
+
+      // For Paystack payments (card/mobile_money with email), require customer email
+      const isPaystackPayment = (paymentData.method === 'card' || paymentData.method === 'mobile_money') && paymentData.email;
+      if (isPaystackPayment) {
+        if (!paymentData.email) {
+          return res.status(400).json({ error: 'Email is required for card/mobile money payments' });
+        }
+        if (paymentData.amount <= 0) {
+          return res.status(400).json({ error: 'Amount must be greater than 0 for Paystack payments' });
+        }
+      }
+
       const result = await SalesService.createSale(
         req.user.userId,
         customerId,

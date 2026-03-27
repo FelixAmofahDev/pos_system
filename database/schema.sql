@@ -96,16 +96,20 @@ CREATE TABLE IF NOT EXISTS sales_items (
 -- Payments Table
 CREATE TABLE IF NOT EXISTS payments (
   payment_id INT PRIMARY KEY AUTO_INCREMENT,
-  sale_id INT NOT NULL UNIQUE,
-  method ENUM('cash', 'card', 'mobile_money', 'check') NOT NULL,
+  sale_id INT NOT NULL,
+  method ENUM('cash', 'card', 'mobile_money', 'check', 'paystack') NOT NULL,
   amount DECIMAL(15, 2) NOT NULL,
+  paid_amount DECIMAL(15, 2),
   change_amount DECIMAL(10, 2) DEFAULT 0,
-  status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
+  status ENUM('pending', 'completed', 'failed', 'refunded', 'partially_refunded') DEFAULT 'pending',
+  paystack_reference VARCHAR(100),
+  paystack_access_code VARCHAR(100),
   payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE,
   INDEX idx_method (method),
   INDEX idx_status (status),
-  INDEX idx_date (payment_date)
+  INDEX idx_date (payment_date),
+  INDEX idx_paystack_reference (paystack_reference)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Inventory Logs Table

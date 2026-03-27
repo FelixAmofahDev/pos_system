@@ -78,16 +78,25 @@ class SalesService {
         }
 
         // Create payment record
+        // For Paystack (card/mobile_money with email), payment status starts as 'pending' and gets updated after verification
+        const isPaystackPayment = (paymentData.method === 'card' || paymentData.method === 'mobile_money') && paymentData.email;
+        const paymentStatus = isPaystackPayment ? 'pending' : 'completed';
         const paymentId = await SalesModel.createPayment(
           saleId,
           paymentData.method,
           paymentData.amount,
-          paymentData.changeAmount || 0
+          paymentData.changeAmount || 0,
+          paymentStatus
         );
+
+        // For Paystack, also update sale status to pending (will be completed after payment verification)
+        if (isPaystackPayment) {
+          await SalesModel.updateSaleStatus(saleId, 'pending');
+        }
 
         // Update customer loyalty points and total purchases
         if (customerId) {
-          const loyaltyPoints = Math.floor(finalAmount / 10); // 1 point per $10
+          const loyaltyPoints = Math.floor(finalAmount / 50); // 1 point per GH₵50
           await CustomerModel.addLoyaltyPoints(customerId, loyaltyPoints);
           await CustomerModel.updateTotalPurchases(customerId, finalAmount);
         }
