@@ -67,9 +67,9 @@ class ProductService {
   }
 
   // Create product
-  static async createProduct(name, categoryId, barcode, price, quantity, reorderLevel, imageUrl) {
+  static async createProduct(name, category_id, barcode, price, quantity, reorder_level, image_url) {
     try {
-      if (!name || !categoryId || !price) {
+      if (!name || !category_id || !price) {
         throw {
           status: 400,
           message: 'Name, category, and price are required'
@@ -83,7 +83,7 @@ class ProductService {
         };
       }
 
-      return await ProductModel.createProduct(name, categoryId, barcode, price, quantity, reorderLevel, imageUrl);
+      return await ProductModel.createProduct(name, category_id, barcode, price, quantity, reorder_level, image_url);
     } catch (error) {
       throw error;
     }

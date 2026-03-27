@@ -65,8 +65,8 @@ class ProductController {
   // Create product
   static async createProduct(req, res) {
     try {
-      const { name, categoryId, barcode, price, quantity, reorderLevel, imageUrl } = req.body;
-      const product = await ProductService.createProduct(name, categoryId, barcode, price, quantity || 0, reorderLevel || 10, imageUrl);
+      const { name, category_id, barcode, price, quantity, reorder_level, image_url } = req.body;
+      const product = await ProductService.createProduct(name, category_id, barcode, price, quantity || 0, reorder_level || 10, image_url);
       res.status(201).json({ message: 'Product created successfully', data: product });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
@@ -76,7 +76,9 @@ class ProductController {
   // Update product
   static async updateProduct(req, res) {
     try {
-      const product = await ProductService.updateProduct(req.params.id, req.body);
+      const { name, category_id, barcode, price, quantity, reorder_level, image_url } = req.body;
+      const updates = { name, category_id, barcode, price, quantity, reorder_level, image_url };
+      const product = await ProductService.updateProduct(req.params.id, updates);
       res.json({ message: 'Product updated successfully', data: product });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });

@@ -86,12 +86,12 @@ class ProductModel {
   }
 
   // Create product
-  static async createProduct(name, categoryId, barcode, price, quantity, reorderLevel, imageUrl) {
+  static async createProduct(name, category_id, barcode, price, quantity, reorder_level, image_url) {
     try {
       const [result] = await pool.query(
         `INSERT INTO products (name, category_id, barcode, price, quantity, reorder_level, image_url)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [name, categoryId, barcode, price, quantity, reorderLevel, imageUrl || null]
+        [name, category_id, barcode, price, quantity, reorder_level, image_url || null]
       );
       return this.getProductById(result.insertId);
     } catch (error) {
