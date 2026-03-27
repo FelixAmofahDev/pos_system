@@ -13,6 +13,57 @@
       background: #f1f5f9;
     }
 
+    .sidebar {
+      background: white;
+      border-right: 1px solid #e2e8f0;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .sidebar-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2563eb;
+      margin: 0;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      padding: 1rem 0;
+    }
+
+    .sidebar-menu li {
+      margin: 0;
+    }
+
+    .sidebar-menu a {
+      display: block;
+      padding: 0.875rem 1.5rem;
+      color: #64748b;
+      text-decoration: none;
+      transition: all 0.3s;
+      border-left: 3px solid transparent;
+      font-weight: 500;
+    }
+
+    .sidebar-menu a:hover {
+      background: #f1f5f9;
+      color: #2563eb;
+    }
+
+    .sidebar-menu a.active {
+      background: #dbeafe;
+      color: #2563eb;
+      border-left-color: #2563eb;
+    }
+
     .content-main {
       padding: 2rem;
       overflow-y: auto;
