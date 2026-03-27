@@ -679,8 +679,16 @@
             customerId: customerId
           });
 
+          console.log('=== FRONTEND RECEIVED PAYMENT INIT RESPONSE ===');
+          console.log('Full response:', paymentInit);
+          console.log('Success:', paymentInit.success);
+          console.log('Data:', paymentInit.data);
+          console.log('Public Key:', paymentInit.data?.public_key);
+          console.log('Reference:', paymentInit.data?.reference);
+
           if (paymentInit.success) {
             // Open Paystack popup using inline payment
+            console.log('About to call openPaystackPopup with data:', paymentInit.data);
             openPaystackPopup(paymentInit.data, saleId, total, customerEmail, {
               cart,
               discountAmount,
@@ -688,6 +696,7 @@
               finalAmount: total
             });
           } else {
+            console.error('Payment init not successful');
             showAlert('Failed to initialize payment', 'error');
           }
         } catch (error) {
@@ -755,57 +764,106 @@
         key: paystackData.public_key,
         email: customerEmail,
         amount: total * 100,
-        reference: paystackData.reference
+        reference: paystackData.reference,
+        saleId: saleId
       });
 
-      const handler = PaystackPop.setup({
-        key: paystackData.public_key,
-        email: customerEmail,
-        amount: total * 100, // Paystack expects amount in pesewas
-        ref: paystackData.reference,
-        currency: 'GHS',
-        channels: ['card', 'mobile_money'],
-        onClose: function() {
-          console.log('Payment window closed by user');
-          showAlert('Payment window closed', 'info');
-        },
-        onSuccess: function(response) {
-          console.log('Paystack payment successful, response:', response);
-          // Verify payment with backend
-          verifyPaymentAndComplete(response.reference, saleId, saleInfo);
-        }
-      });
-      handler.openIframe();
+      let pollInterval = null;
+      let pollCount = 0;
+      const maxPolls = 90; // Poll for up to 3 minutes (90 * 2 seconds)
+
+      try {
+        const handler = PaystackPop.setup({
+          key: paystackData.public_key,
+          email: customerEmail,
+          amount: total * 100,
+          ref: paystackData.reference,
+          currency: 'GHS',
+          channels: ['card', 'mobile_money'],
+          onClose: () => console.log('Paystack iframe closed'),
+          onSuccess: (response) => {
+            console.log('Success callback fired:', response);
+            if (pollInterval) clearInterval(pollInterval);
+            verifyPaymentAndComplete(response.reference, saleId, saleInfo);
+          }
+        });
+
+        console.log('PaystackPop handler created');
+        handler.openIframe();
+        console.log('Iframe opened, starting payment polling...');
+
+        // Start polling immediately - callbacks don't always fire
+        pollInterval = setInterval(() => {
+          pollCount++;
+          console.log(`Poll ${pollCount}: Checking payment status for reference: ${paystackData.reference}`);
+
+          // Check payment status
+          api.verifyPayment(paystackData.reference)
+            .then(response => {
+              console.log('Poll response:', response);
+              if (response && response.success && response.data && response.data.status === 'completed') {
+                console.log('Payment verified as completed!');
+                if (pollInterval) clearInterval(pollInterval);
+                verifyPaymentAndComplete(paystackData.reference, saleId, saleInfo);
+              }
+            })
+            .catch(error => {
+              console.log('Poll check error (expected if payment not yet verified):', error.message);
+              if (pollCount >= maxPolls) {
+                console.log('Max poll attempts reached');
+                if (pollInterval) clearInterval(pollInterval);
+              }
+            });
+        }, 2000); // Poll every 2 seconds
+
+      } catch (error) {
+        console.error('Error opening Paystack popup:', error);
+        showAlert('Failed to open payment popup: ' + error.message, 'error');
+        if (pollInterval) clearInterval(pollInterval);
+      }
     }
 
     async function verifyPaymentAndComplete(ref, saleId, saleInfo) {
       try {
-        console.log('Starting payment verification for reference:', ref);
-        showLoading(document.querySelector('#checkoutForm button[type="submit"]'));
+        console.log('=== VERIFY PAYMENT AND COMPLETE STARTED ===');
+        console.log('Reference:', ref);
+        console.log('Sale ID:', saleId);
+        console.log('Sale Info:', saleInfo);
 
+        const submitButton = document.querySelector('#checkoutForm button[type="submit"]');
+        console.log('Submit button found:', !!submitButton);
+
+        showLoading(submitButton);
+
+        console.log('Calling api.verifyPayment with reference:', ref);
         const verification = await api.verifyPayment(ref);
+        console.log('=== VERIFICATION RESPONSE RECEIVED ===');
         console.log('Verification response:', verification);
 
         if (verification && verification.success) {
-          console.log('Payment verified successfully');
+          console.log('✓ Payment verified successfully');
           showAlert('Payment successful!', 'success');
 
           // Close checkout modal
           closeModal('checkoutModal');
+          console.log('Checkout modal closed');
 
           // Show receipt modal with verified amount
-          showReceiptModal({
+          const receiptData = {
             saleId: saleId,
             finalAmount: verification.data.amount || saleInfo.finalAmount,
             cart: saleInfo.cart,
             discountAmount: saleInfo.discountAmount,
             taxAmount: saleInfo.taxAmount
-          });
+          };
+          console.log('Showing receipt modal with data:', receiptData);
+          showReceiptModal(receiptData);
 
           // Clear cart
           cart = [];
           updateCart();
           document.getElementById('checkoutForm').reset();
+          console.log('✓ Cart cleared and form reset');
         } else {
           console.warn('Verification response indicates payment not successful:', verification);
           // Still show receipt as payment was successful on Paystack side
@@ -825,7 +883,11 @@
           document.getElementById('checkoutForm').reset();
         }
       } catch (error) {
-        console.error('Payment verification error:', error);
+        console.error('=== PAYMENT VERIFICATION ERROR ===');
+        console.error('Error:', error);
+        console.error('Error message:', error.message);
+        console.error('Stack:', error.stack);
+
         // Even on error, show receipt since Paystack confirmed payment
         showAlert('Payment successful! Receipt is being shown.', 'success');
 
@@ -847,6 +909,7 @@
           showAlert('Payment completed but had error showing receipt. Sale ID: ' + saleId, 'warning');
         }
       } finally {
+        console.log('=== VERIFY PAYMENT FINALLY BLOCK ===');
         hideLoading(document.querySelector('#checkoutForm button[type="submit"]'));
       }
     }
