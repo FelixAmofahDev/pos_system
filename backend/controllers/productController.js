@@ -1,4 +1,5 @@
 const ProductService = require('../services/productService');
+const { pool } = require('../config/database');
 
 class ProductController {
   // Get all products
@@ -97,6 +98,16 @@ class ProductController {
     try {
       const products = await ProductService.getLowStockProducts();
       res.json({ data: products, count: products.length });
+    } catch (error) {
+      res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+
+  // Get all categories
+  static async getAllCategories(req, res) {
+    try {
+      const [categories] = await pool.query('SELECT * FROM categories ORDER BY name');
+      res.json({ data: categories, count: categories.length });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
     }

@@ -110,6 +110,10 @@ class APIClient {
     return this.request('/products/stock/low');
   }
 
+  async getCategories() {
+    return this.request('/products/categories/list/all');
+  }
+
   // Customer endpoints
   async getCustomers(limit = 100, offset = 0) {
     return this.request(`/customers?limit=${limit}&offset=${offset}`);

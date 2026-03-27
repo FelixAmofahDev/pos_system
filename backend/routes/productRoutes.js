@@ -9,6 +9,9 @@ router.get('/', ProductController.getAllProducts);
 // Get product by barcode (POS)
 router.get('/barcode/scan', ProductController.getProductByBarcode);
 
+// Get all categories
+router.get('/categories/list/all', ProductController.getAllCategories);
+
 // Search products
 router.get('/search', ProductController.searchProducts);
 

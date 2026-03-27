@@ -250,6 +250,7 @@
     requireRole(['admin', 'manager']);
 
     let allProducts = [];
+    let categories = [];
     let currentEditingProductId = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -259,6 +260,7 @@
       }
 
       await loadProducts();
+      await loadCategories();
       setupEventListeners();
     });
 
@@ -269,6 +271,25 @@
         displayProducts(allProducts);
       } catch (error) {
         showAlert('Error loading products: ' + error.message, 'error');
+      }
+    }
+
+    async function loadCategories() {
+      try {
+        const response = await api.getCategories();
+        categories = response.data || [];
+
+        // Populate category dropdown in form
+        const select = document.getElementById('productFormCategory');
+        select.innerHTML = '<option value="">Select a category</option>';
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.category_id;
+          option.textContent = cat.name;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading categories:', error);
       }
     }
 

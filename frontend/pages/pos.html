@@ -45,9 +45,9 @@
     }
 
     .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
       padding: 1.5rem;
       overflow-y: auto;
     }
@@ -113,7 +113,53 @@
       cursor: not-allowed;
     }
 
-    /* Cart Sidebar */
+    /* Category Sections */
+    .product-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .category-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #2563eb;
+      sticky: top 0;
+      background: #f1f5f9;
+      z-index: 10;
+    }
+
+    .category-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #1e293b;
+      text-transform: capitalize;
+    }
+
+    .category-count {
+      background: #2563eb;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .category-products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
     .cart-sidebar {
       background: white;
       border-left: 1px solid #e2e8f0;
@@ -410,6 +456,7 @@
     let cart = [];
     let products = [];
     let filteredProducts = [];
+    let categories = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getCurrentUser();
@@ -418,6 +465,7 @@
       }
 
       await loadProducts();
+      await loadCategories();
       setupEventListeners();
     });
 
@@ -432,6 +480,23 @@
       }
     }
 
+    async function loadCategories() {
+      try {
+        const response = await api.getCategories();
+        categories = response.data || [];
+        const select = document.getElementById('categoryFilter');
+        select.innerHTML = '<option value="">All Categories</option>';
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.category_id;
+          option.textContent = cat.name;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    }
+
     function displayProducts() {
       const grid = document.getElementById('productGrid');
       if (filteredProducts.length === 0) {
@@ -439,17 +504,44 @@
         return;
       }
 
-      grid.innerHTML = filteredProducts.map(product => `
-        <div class="product-card" onclick="addToCart(${product.product_id})">
-          <div class="product-name">${product.name}</div>
-          <div class="product-barcode">${product.barcode || 'N/A'}</div>
-          <div class="product-price">${formatCurrency(product.price)}</div>
-          <div class="product-stock">Stock: ${product.quantity}</div>
-          <button class="product-btn" ${product.quantity === 0 ? 'disabled' : ''}>
-            ${product.quantity === 0 ? 'Out of Stock' : 'Add'}
-          </button>
-        </div>
-      `).join('');
+      // Group products by category
+      const groupedByCategory = {};
+      filteredProducts.forEach(product => {
+        const categoryName = product.category_name || `Category ${product.category_id}`;
+        if (!groupedByCategory[categoryName]) {
+          groupedByCategory[categoryName] = [];
+        }
+        groupedByCategory[categoryName].push(product);
+      });
+
+      // Display categories with their products
+      let html = '';
+      Object.keys(groupedByCategory).sort().forEach(categoryName => {
+        const categoryProducts = groupedByCategory[categoryName];
+        html += `
+          <div class="category-section">
+            <div class="category-header">
+              <h2>${categoryName}</h2>
+              <span class="category-count">${categoryProducts.length} items</span>
+            </div>
+            <div class="category-products">
+              ${categoryProducts.map(product => `
+                <div class="product-card" onclick="addToCart(${product.product_id})">
+                  <div class="product-name">${product.name}</div>
+                  <div class="product-barcode">${product.barcode || 'N/A'}</div>
+                  <div class="product-price">${formatCurrency(product.price)}</div>
+                  <div class="product-stock">Stock: ${product.quantity}</div>
+                  <button class="product-btn" ${product.quantity === 0 ? 'disabled' : ''}>
+                    ${product.quantity === 0 ? 'Out of Stock' : 'Add'}
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      grid.innerHTML = html;
     }
 
     function setupEventListeners() {
@@ -467,9 +559,47 @@
         displayProducts();
       });
 
+      // Barcode scanner support - Enter key triggers auto-add
+      document.getElementById('searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const barcode = e.target.value.trim().toLowerCase();
+
+          if (barcode.length === 0) return;
+
+          console.log('Barcode scanned:', barcode);
+
+          // Find product by barcode or name
+          const product = products.find(p =>
+            (p.barcode && p.barcode.toLowerCase() === barcode) ||
+            p.name.toLowerCase().includes(barcode)
+          );
+
+          if (product) {
+            console.log('Product found:', product.name);
+            addToCart(product.product_id);
+            e.target.value = ''; // Clear search
+            filteredProducts = products;
+            displayProducts();
+            e.target.focus(); // Keep focus on search for next scan
+            showAlert(`Added ${product.name} to cart`, 'success');
+          } else {
+            console.warn('No product found for barcode:', barcode);
+            showAlert(`Product not found: ${barcode}`, 'error');
+            e.target.value = '';
+            displayProducts();
+          }
+        }
+      });
+
       // Category filter
       document.getElementById('categoryFilter').addEventListener('change', (e) => {
-        // For now, just filter client-side
+        const categoryId = e.target.value;
+        if (categoryId === '') {
+          filteredProducts = products;
+        } else {
+          filteredProducts = products.filter(p => p.category_id == categoryId);
+        }
         displayProducts();
       });
 
