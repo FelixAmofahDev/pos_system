@@ -19,6 +19,9 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '..')));
 
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);

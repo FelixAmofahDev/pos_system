@@ -106,6 +106,33 @@ class APIClient {
     return this.request(`/products/${productId}`, { method: 'DELETE' });
   }
 
+  async uploadProductImage(formData) {
+    const headers = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/products/upload-image`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    if (response.status === 401) {
+      this.clearToken();
+      window.location.href = '/frontend/pages/login.html';
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Image upload failed');
+    }
+
+    return data;
+  }
+
   async getLowStockProducts() {
     return this.request('/products/stock/low');
   }

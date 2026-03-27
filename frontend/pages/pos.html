@@ -54,17 +54,33 @@
 
     .product-card {
       background: white;
-      border-radius: 0.5rem;
-      padding: 1rem;
-      text-align: center;
+      border-radius: 0.75rem;
+      overflow: hidden;
       cursor: pointer;
       transition: all 0.3s;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
     .product-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      background: #f1f5f9;
+    }
+
+    .product-info {
+      padding: 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .product-name {
@@ -157,8 +173,8 @@
 
     .category-products {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.5rem;
     }
     .cart-sidebar {
       background: white;
@@ -527,13 +543,16 @@
             <div class="category-products">
               ${categoryProducts.map(product => `
                 <div class="product-card" onclick="addToCart(${product.product_id})">
-                  <div class="product-name">${product.name}</div>
-                  <div class="product-barcode">${product.barcode || 'N/A'}</div>
-                  <div class="product-price">${formatCurrency(product.price)}</div>
-                  <div class="product-stock">Stock: ${product.quantity}</div>
-                  <button class="product-btn" ${product.quantity === 0 ? 'disabled' : ''}>
-                    ${product.quantity === 0 ? 'Out of Stock' : 'Add'}
-                  </button>
+                  <img src="${product.image_url || 'https://via.placeholder.com/150?text=No+Image'}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                  <div class="product-info">
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-barcode">${product.barcode || 'N/A'}</div>
+                    <div class="product-price" style="font-weight: 700; color: #2563eb; margin-top: auto;">${formatCurrency(product.price)}</div>
+                    <div class="product-stock">${product.quantity === 0 ? '❌ Out of Stock' : `📦 ${product.quantity}`}</div>
+                    <button class="product-btn" ${product.quantity === 0 ? 'disabled' : ''} style="margin-top: 0.75rem;">
+                      ${product.quantity === 0 ? 'Out of Stock' : '➕ Add to Cart'}
+                    </button>
+                  </div>
                 </div>
               `).join('')}
             </div>

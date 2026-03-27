@@ -86,12 +86,12 @@ class ProductModel {
   }
 
   // Create product
-  static async createProduct(name, categoryId, barcode, price, quantity, reorderLevel) {
+  static async createProduct(name, categoryId, barcode, price, quantity, reorderLevel, imageUrl) {
     try {
       const [result] = await pool.query(
-        `INSERT INTO products (name, category_id, barcode, price, quantity, reorder_level)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [name, categoryId, barcode, price, quantity, reorderLevel]
+        `INSERT INTO products (name, category_id, barcode, price, quantity, reorder_level, image_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, categoryId, barcode, price, quantity, reorderLevel, imageUrl || null]
       );
       return this.getProductById(result.insertId);
     } catch (error) {
@@ -102,7 +102,7 @@ class ProductModel {
   // Update product
   static async updateProduct(productId, updates) {
     try {
-      const allowedFields = ['name', 'category_id', 'barcode', 'price', 'quantity', 'reorder_level', 'status'];
+      const allowedFields = ['name', 'category_id', 'barcode', 'price', 'quantity', 'reorder_level', 'status', 'image_url'];
       const fields = [];
       const values = [];
 

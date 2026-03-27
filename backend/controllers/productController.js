@@ -65,8 +65,8 @@ class ProductController {
   // Create product
   static async createProduct(req, res) {
     try {
-      const { name, categoryId, barcode, price, quantity, reorderLevel } = req.body;
-      const product = await ProductService.createProduct(name, categoryId, barcode, price, quantity || 0, reorderLevel || 10);
+      const { name, categoryId, barcode, price, quantity, reorderLevel, imageUrl } = req.body;
+      const product = await ProductService.createProduct(name, categoryId, barcode, price, quantity || 0, reorderLevel || 10, imageUrl);
       res.status(201).json({ message: 'Product created successfully', data: product });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
@@ -108,6 +108,28 @@ class ProductController {
     try {
       const [categories] = await pool.query('SELECT * FROM categories ORDER BY name');
       res.json({ data: categories, count: categories.length });
+    } catch (error) {
+      res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+
+  // Upload product image
+  static async uploadProductImage(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      const imageUrl = `/uploads/products/${req.file.filename}`;
+
+      res.json({
+        success: true,
+        data: {
+          imageUrl: imageUrl,
+          filename: req.file.filename,
+          path: req.file.path
+        }
+      });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
     }

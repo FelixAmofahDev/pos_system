@@ -67,7 +67,7 @@ class ProductService {
   }
 
   // Create product
-  static async createProduct(name, categoryId, barcode, price, quantity, reorderLevel) {
+  static async createProduct(name, categoryId, barcode, price, quantity, reorderLevel, imageUrl) {
     try {
       if (!name || !categoryId || !price) {
         throw {
@@ -83,7 +83,7 @@ class ProductService {
         };
       }
 
-      return await ProductModel.createProduct(name, categoryId, barcode, price, quantity, reorderLevel);
+      return await ProductModel.createProduct(name, categoryId, barcode, price, quantity, reorderLevel, imageUrl);
     } catch (error) {
       throw error;
     }
