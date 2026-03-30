@@ -572,11 +572,27 @@
       try {
         const response = await api.getCurrentUser();
         currentUser = response;
-        document.getElementById('currentUser').textContent = `${response.username} (${response.role})`;
+        document.getElementById('currentUser').textContent = `${response.username}`;
+        document.getElementById('userRole').textContent = response.role ? response.role.charAt(0).toUpperCase() + response.role.slice(1) : 'User';
         document.getElementById('roleIndicator').textContent = response.role.toUpperCase();
+
+        // Filter menu items based on role
+        filterMenuByRole(response.role);
       } catch (error) {
         console.error('Error loading current user:', error);
       }
+    }
+
+    function filterMenuByRole(userRole) {
+      const navItems = document.querySelectorAll('.sidebar-nav li[data-roles]');
+      navItems.forEach(item => {
+        const allowedRoles = item.dataset.roles ? item.dataset.roles.split(',') : [];
+        if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+          item.style.display = 'none';
+        } else {
+          item.style.display = 'block';
+        }
+      });
     }
 
     async function loadUsers() {

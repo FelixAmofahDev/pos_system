@@ -330,12 +330,27 @@
       const user = getCurrentUser();
       if (user) {
         document.getElementById('username').textContent = user.username;
+        
+        // Filter menu items based on role
+        filterMenuByRole(user.role);
       }
 
       await loadProducts();
       await loadCategories();
       setupEventListeners();
     });
+
+    function filterMenuByRole(userRole) {
+      const navItems = document.querySelectorAll('.sidebar-menu li[data-roles]');
+      navItems.forEach(item => {
+        const allowedRoles = item.dataset.roles ? item.dataset.roles.split(',') : [];
+        if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+          item.style.display = 'none';
+        } else {
+          item.style.display = 'block';
+        }
+      });
+    }
 
     async function loadProducts() {
       try {

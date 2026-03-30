@@ -231,12 +231,13 @@
       </div>
       <nav>
         <ul class="sidebar-menu">
-          <li><a href="dashboard.html" class="nav-link" data-page="dashboard" data-roles="admin,manager,cashier">📊 Dashboard</a></li>
+          <li><a href="dashboard.html" class="nav-link" data-page="dashboard" data-roles="admin,manager">📊 Dashboard</a></li>
           <li><a href="pos.html" class="nav-link" data-page="pos" data-roles="cashier,manager,admin">🛒 POS</a></li>
           <li><a href="products.html" class="nav-link" data-page="products" data-roles="admin,manager">📦 Products</a></li>
           <li><a href="customers.html" class="nav-link" data-page="customers" data-roles="admin,manager">👥 Customers</a></li>
           <li><a href="sales.html" class="nav-link" data-page="sales" data-roles="admin,manager">📋 Sales</a></li>
           <li><a href="reports.html" class="nav-link" data-page="reports" data-roles="admin,manager">📈 Reports</a></li>
+          <li><a href="users.html" class="nav-link" data-page="users" data-roles="admin">👤 Users</a></li>
         </ul>
       </nav>
     </aside>
@@ -359,6 +360,12 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getCurrentUser();
       if (user) {
+        // Redirect cashier to POS page
+        if (user.role === 'cashier') {
+          window.location.href = 'pos.html';
+          return;
+        }
+
         document.getElementById('username').textContent = user.username;
         document.getElementById('userInitial').textContent = user.username.charAt(0).toUpperCase();
         

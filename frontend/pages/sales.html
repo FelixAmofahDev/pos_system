@@ -585,10 +585,8 @@
         document.getElementById('roleIndicator').textContent = response.role.toUpperCase();
         document.getElementById('roleIndicator').className = `user-badge ${response.role}`;
 
-        // Show admin link for admins only
-        if (response.role === 'admin') {
-          document.getElementById('adminLink').style.display = 'block';
-        }
+        // Filter menu items based on role
+        filterMenuByRole(response.role);
 
         // Show user filter for admins
         if (response.role === 'admin') {
@@ -597,6 +595,18 @@
       } catch (error) {
         console.error('Error loading current user:', error);
       }
+    }
+
+    function filterMenuByRole(userRole) {
+      const navItems = document.querySelectorAll('.sidebar-nav li[data-roles]');
+      navItems.forEach(item => {
+        const allowedRoles = item.dataset.roles ? item.dataset.roles.split(',') : [];
+        if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+          item.style.display = 'none';
+        } else {
+          item.style.display = 'block';
+        }
+      });
     }
 
     async function loadUsers() {
