@@ -99,6 +99,20 @@
       background: #f1f5f9;
     }
 
+    .user-info-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .user-role {
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: 400;
+      margin-top: 0.25rem;
+      text-transform: capitalize;
+    }
+
     .user-avatar {
       width: 40px;
       height: 40px;
@@ -217,12 +231,12 @@
       </div>
       <nav>
         <ul class="sidebar-menu">
-          <li><a href="dashboard.html" class="nav-link" data-page="dashboard">📊 Dashboard</a></li>
-          <li><a href="pos.html" class="nav-link" data-page="pos">🛒 POS</a></li>
-          <li><a href="products.html" class="nav-link" data-page="products">📦 Products</a></li>
-          <li><a href="customers.html" class="nav-link" data-page="customers">👥 Customers</a></li>
-          <li><a href="sales.html" class="nav-link" data-page="sales">📋 Sales</a></li>
-          <li><a href="reports.html" class="nav-link" data-page="reports">📈 Reports</a></li>
+          <li><a href="dashboard.html" class="nav-link" data-page="dashboard" data-roles="admin,manager,cashier">📊 Dashboard</a></li>
+          <li><a href="pos.html" class="nav-link" data-page="pos" data-roles="cashier,manager,admin">🛒 POS</a></li>
+          <li><a href="products.html" class="nav-link" data-page="products" data-roles="admin,manager">📦 Products</a></li>
+          <li><a href="customers.html" class="nav-link" data-page="customers" data-roles="admin,manager">👥 Customers</a></li>
+          <li><a href="sales.html" class="nav-link" data-page="sales" data-roles="admin,manager">📋 Sales</a></li>
+          <li><a href="reports.html" class="nav-link" data-page="reports" data-roles="admin,manager">📈 Reports</a></li>
         </ul>
       </nav>
     </aside>
@@ -235,7 +249,10 @@
         <div class="user-menu">
           <div class="user-info" onclick="toggleUserMenu()">
             <div class="user-avatar" id="userInitial">A</div>
-            <span id="username">Admin</span>
+            <div class="user-info-content">
+              <span id="username">Admin</span>
+              <span class="user-role" id="userRole">Admin</span>
+            </div>
           </div>
           <div class="dropdown-menu" id="userDropdown">
             <a href="profile.html">👤 Profile</a>
@@ -344,6 +361,13 @@
       if (user) {
         document.getElementById('username').textContent = user.username;
         document.getElementById('userInitial').textContent = user.username.charAt(0).toUpperCase();
+        
+        // Display user role
+        const roleDisplay = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+        document.getElementById('userRole').textContent = roleDisplay;
+
+        // Filter menu items based on role
+        filterMenuByRole(user.role);
       }
 
       // Set active nav link
@@ -357,6 +381,19 @@
       // Load dashboard data
       await loadDashboardData();
     });
+
+    function filterMenuByRole(userRole) {
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => {
+        const allowedRoles = link.dataset.roles ? link.dataset.roles.split(',') : [];
+        if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+          // Hide the menu item by removing it or hiding its parent
+          link.parentElement.style.display = 'none';
+        } else {
+          link.parentElement.style.display = 'block';
+        }
+      });
+    }
 
     async function loadDashboardData() {
       try {

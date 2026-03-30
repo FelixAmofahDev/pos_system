@@ -445,13 +445,13 @@
       <div class="sidebar-header">🏪 POS</div>
       <nav>
         <ul class="sidebar-nav">
-          <li><a href="dashboard.html">📊 Dashboard</a></li>
-          <li><a href="pos.html">🛒 POS</a></li>
-          <li><a href="products.html">📦 Products</a></li>
-          <li><a href="customers.html">👥 Customers</a></li>
-          <li><a href="sales.html" class="active">📋 Sales</a></li>
-          <li><a href="reports.html">📈 Reports</a></li>
-          <li id="adminLink" style="display: none;"><a href="users.html">👤 Users</a></li>
+          <li data-roles="admin,manager,cashier"><a href="dashboard.html">📊 Dashboard</a></li>
+          <li data-roles="cashier,manager,admin"><a href="pos.html">🛒 POS</a></li>
+          <li data-roles="admin,manager"><a href="products.html">📦 Products</a></li>
+          <li data-roles="admin,manager"><a href="customers.html">👥 Customers</a></li>
+          <li data-roles="admin,manager"><a href="sales.html" class="active">📋 Sales</a></li>
+          <li data-roles="admin,manager"><a href="reports.html">📈 Reports</a></li>
+          <li data-roles="admin" class="user-link"><a href="users.html">👤 Users</a></li>
         </ul>
       </nav>
     </aside>

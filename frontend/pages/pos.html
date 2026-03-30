@@ -409,58 +409,79 @@
 
   <!-- Checkout Modal -->
   <div class="modal" id="checkoutModal">
-    <div class="modal-content p-4" style="max-width: 500px;">
-      <h2>Checkout</h2>
-      <form id="checkoutForm" class="mt-4">
-        <div class="form-group">
-          <label for="customerPhone">Customer Phone (Optional)</label>
-          <input type="tel" id="customerPhone" placeholder="Enter customer phone">
-        </div>
+    <div class="modal-content p-4" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+      <h2 style="color: #1e293b; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <span>Complete Purchase</span>
+        <button type="button" onclick="closeModal('checkoutModal')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+      </h2>
+      <form id="checkoutForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <!-- Customer Information Section -->
+        <div style="border-right: 1px solid #e2e8f0; padding-right: 1.5rem;">
+          <h3 style="color: #2563eb; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; font-weight: 600;">👤 Customer Information</h3>
+          
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="customerName" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">Customer Name (Optional)</label>
+            <input type="text" id="customerName" placeholder="Full name" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
+          </div>
 
-        <div class="form-group">
-          <label for="discountAmount">Discount Amount</label>
-          <input type="number" id="discountAmount" min="0" step="0.01" value="0">
-        </div>
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="customerPhone" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">📱 Phone Number</label>
+            <input type="tel" id="customerPhone" placeholder="0248822530" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
+          </div>
 
-        <div class="form-group">
-          <label for="taxAmount">Tax Amount</label>
-          <input type="number" id="taxAmount" min="0" step="0.01" value="0">
-        </div>
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="customerEmail" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">📧 Email Address</label>
+            <input type="email" id="customerEmail" placeholder="customer@example.com" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
+          </div>
 
-        <div class="form-group">
-          <label for="paymentMethod">Payment Method</label>
-          <select id="paymentMethod" required>
-            <option value="">Select payment method</option>
-            <option value="cash">Cash</option>
-            <option value="card">Card (Paystack)</option>
-            <option value="mobile_money">Mobile Money (Paystack)</option>
-            <option value="check">Check</option>
-          </select>
-        </div>
-
-        <div id="paystackFields" style="display: none;">
-          <div class="form-group">
-            <label for="customerEmail">Customer Email (Required for Paystack)</label>
-            <input type="email" id="customerEmail" placeholder="customer@example.com">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="customerAddress" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">📍 Address</label>
+            <textarea id="customerAddress" placeholder="Customer address" rows="3" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem; resize: none;"></textarea>
           </div>
         </div>
 
-        <div id="cashPaymentFields">
-          <div class="form-group">
-            <label for="amountPaid">Amount Paid (Cash)</label>
-            <input type="number" id="amountPaid" min="0" step="0.01" placeholder="0.00">
+        <!-- Purchase Information Section -->
+        <div style="padding-left: 1.5rem;">
+          <h3 style="color: #2563eb; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; font-weight: 600;">🛒 Purchase Details</h3>
+          
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="discountAmount" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">🎁 Discount Amount</label>
+            <input type="number" id="discountAmount" min="0" step="0.01" value="0" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
           </div>
-          <div class="summary-row">
-            <span>Change:</span>
-            <span id="changeAmount">GH₵0.00</span>
-          </div>
-        </div>
 
-        <div class="flex gap-2 justify-between mt-4">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('checkoutModal')">Cancel</button>
-          <button type="submit" class="btn btn-primary">Complete Sale</button>
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="taxAmount" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">💰 Tax Amount</label>
+            <input type="number" id="taxAmount" min="0" step="0.01" value="0" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="paymentMethod" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">💳 Payment Method</label>
+            <select id="paymentMethod" required style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
+              <option value="">Select payment method</option>
+              <option value="cash">💵 Cash</option>
+              <option value="card">💳 Card (Paystack)</option>
+              <option value="mobile_money">📱 Mobile Money (Paystack)</option>
+              <option value="check">✓ Check</option>
+            </select>
+          </div>
+
+          <div id="cashPaymentFields" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <label for="amountPaid" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #475569; font-size: 0.875rem;">Amount Paid</label>
+              <input type="number" id="amountPaid" min="0" step="0.01" placeholder="0.00" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem;">
+            </div>
+            <div style="background: #f0fdf4; padding: 0.75rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #16a34a; font-weight: 500; font-size: 0.875rem;">🔄 Change:</span>
+              <span id="changeAmount" style="color: #16a34a; font-weight: 700; font-size: 1rem;">GH₵0.00</span>
+            </div>
+          </div>
         </div>
       </form>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+        <button type="button" onclick="closeModal('checkoutModal')" style="padding: 0.875rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: white; color: #1e293b; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">Cancel</button>
+        <button type="submit" form="checkoutForm" style="padding: 0.875rem; border: none; border-radius: 0.5rem; background: #2563eb; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Complete Sale</button>
+      </div>
     </div>
   </div>
 
@@ -473,6 +494,7 @@
     let products = [];
     let filteredProducts = [];
     let categories = [];
+    let currentReceiptData = null; // Store receipt data for printing
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getCurrentUser();
@@ -789,13 +811,23 @@
 
           // Get or create customer
           let customerId = null;
+          const customerName = document.getElementById('customerName').value.trim();
+          const customerPhone = document.getElementById('customerPhone').value.trim();
+          const customerEmail = document.getElementById('customerEmail').value.trim();
+          const customerAddress = document.getElementById('customerAddress').value.trim();
+
           if (customerPhone) {
             try {
               const customer = await api.getCustomerByPhone(customerPhone);
               customerId = customer.customer_id;
             } catch (e) {
-              // Customer doesn't exist, create new one
-              const newCustomer = await api.createCustomer(customerPhone, customerPhone);
+              // Customer doesn't exist, create new one with full information
+              const newCustomer = await api.createCustomer({
+                name: customerName || customerPhone,
+                phone: customerPhone,
+                email: customerEmail || null,
+                address: customerAddress || null
+              });
               customerId = newCustomer.data.customer_id;
             }
           }
@@ -861,14 +893,23 @@
         const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
         showLoading(submitBtn);
 
+        // Get or create customer with full information
         let customerId = null;
+        const customerName = document.getElementById('customerName').value.trim();
+        const customerAddress = document.getElementById('customerAddress').value.trim();
+        
         if (customerPhone) {
           try {
             const customer = await api.getCustomerByPhone(customerPhone);
             customerId = customer.customer_id;
           } catch (e) {
-            // Customer doesn't exist, create new one
-            const newCustomer = await api.createCustomer(customerPhone, customerPhone);
+            // Customer doesn't exist, create new one with full information
+            const newCustomer = await api.createCustomer({
+              name: customerName || customerPhone,
+              phone: customerPhone,
+              email: customerEmail || null,
+              address: customerAddress || null
+            });
             customerId = newCustomer.data.customer_id;
           }
         }
@@ -892,14 +933,22 @@
         const response = await api.createSale(saleData);
         showAlert('Sale completed successfully!', 'success');
 
-        // Print receipt
-        await generateReceipt(response.data);
-
-        // Clear cart and close modal
-        cart = [];
-        updateCart();
+        // Close checkout modal
         closeModal('checkoutModal');
         document.getElementById('checkoutForm').reset();
+
+        // Show receipt with cart information
+        showReceiptModal({
+          saleId: response.data.saleId,
+          cart: cart,
+          discountAmount: discountAmount,
+          taxAmount: taxAmount,
+          finalAmount: response.data.finalAmount
+        });
+
+        // Clear cart only after receipt is shown
+        cart = [];
+        updateCart();
       } catch (error) {
         showAlert('Error completing sale: ' + error.message, 'error');
       } finally {
@@ -1065,6 +1114,15 @@
 
     // Show receipt modal with print option
     function showReceiptModal(saleData) {
+      // Store receipt data globally for printing later
+      currentReceiptData = {
+        saleId: saleData.saleId,
+        cart: [...saleData.cart],
+        discountAmount: saleData.discountAmount,
+        taxAmount: saleData.taxAmount,
+        finalAmount: saleData.finalAmount
+      };
+
       const modal = document.createElement('div');
       modal.className = 'modal active';
       modal.id = 'receiptModal';
@@ -1142,7 +1200,7 @@
 
           <div style="display: flex; gap: 0.5rem; justify-content: space-between; margin-top: 1.5rem;">
             <button onclick="closeReceiptModal()" class="btn btn-secondary" style="flex: 1; padding: 0.75rem; border: none; border-radius: 0.5rem; background: #ef4444; color: white; font-weight: 600; cursor: pointer;">Done</button>
-            <button onclick="printReceipt('${saleData.saleId}', ${saleData.finalAmount})" class="btn btn-primary" style="flex: 1; padding: 0.75rem; border: none; border-radius: 0.5rem; background: #2563eb; color: white; font-weight: 600; cursor: pointer;">🖨️ Print</button>
+            <button onclick="printReceipt('${saleData.saleId}')" class="btn btn-primary" style="flex: 1; padding: 0.75rem; border: none; border-radius: 0.5rem; background: #2563eb; color: white; font-weight: 600; cursor: pointer;">🖨️ Print</button>
           </div>
         </div>
       `;
@@ -1159,7 +1217,12 @@
       }
     }
 
-    function printReceipt(saleId, finalAmount) {
+    function printReceipt(saleId) {
+      if (!currentReceiptData) {
+        showAlert('Receipt data not available', 'error');
+        return;
+      }
+
       const receiptWindow = window.open('', '', 'width=400,height=600');
       const today = new Date().toLocaleDateString();
 
@@ -1191,7 +1254,8 @@
             </tr>
       `;
 
-      cart.forEach(item => {
+      // Use stored receipt data to ensure items are printed
+      currentReceiptData.cart.forEach(item => {
         const subtotal = item.price * item.quantity;
         html += `
           <tr>
@@ -1209,7 +1273,7 @@
       html += `
             <tr class="total">
               <td>Total:</td>
-              <td class="right">GH₵${finalAmount.toFixed(2)}</td>
+              <td class="right">GH₵${currentReceiptData.finalAmount.toFixed(2)}</td>
             </tr>
           </table>
           <div class="separator">===============================</div>
