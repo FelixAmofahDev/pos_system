@@ -71,6 +71,33 @@ class APIClient {
     return this.request('/users/me');
   }
 
+  async registerUser(username, email, password, role = 'cashier') {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password, role })
+    });
+  }
+
+  // User management endpoints
+  async getAllUsers() {
+    return this.request('/users');
+  }
+
+  async getUserById(userId) {
+    return this.request(`/users/${userId}`);
+  }
+
+  async updateUser(userId, data) {
+    return this.request(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteUser(userId) {
+    return this.request(`/users/${userId}`, { method: 'DELETE' });
+  }
+
   // Product endpoints
   async getProducts(limit = 100, offset = 0) {
     return this.request(`/products?limit=${limit}&offset=${offset}`);

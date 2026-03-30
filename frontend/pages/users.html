@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POS System - Customers</title>
+  <title>POS System - User Management</title>
   <link rel="stylesheet" href="../css/styles.css">
   <style>
     * {
@@ -143,34 +143,6 @@
       margin-bottom: 2rem;
     }
 
-    .search-bar {
-      background: white;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      gap: 1rem;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"],
-    textarea {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.375rem;
-      font-size: 1rem;
-      transition: all 0.2s;
-    }
-
-    input:focus,
-    textarea:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-
     .btn {
       padding: 0.625rem 1.25rem;
       border-radius: 0.5rem;
@@ -249,6 +221,29 @@
 
     tr:hover {
       background: #f8fafc;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .role-badge.admin {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .role-badge.manager {
+      background: #f3e8ff;
+      color: #6b21a8;
+    }
+
+    .role-badge.cashier {
+      background: #cffafe;
+      color: #164e63;
     }
 
     .status-badge {
@@ -346,6 +341,23 @@
       color: #1e293b;
     }
 
+    input,
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
     .alert {
       padding: 1rem;
       border-radius: 0.5rem;
@@ -364,63 +376,23 @@
       border-left: 4px solid #ef4444;
     }
 
+    .alert-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border-left: 4px solid #f59e0b;
+    }
+
     .empty-state {
       text-align: center;
       padding: 3rem;
       color: #64748b;
     }
 
-    .customer-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 0.75rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    .empty-state svg {
+      width: 4rem;
+      height: 4rem;
       margin-bottom: 1rem;
-    }
-
-    .customer-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 1rem;
-    }
-
-    .customer-name {
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: #1e293b;
-    }
-
-    .customer-info {
-      font-size: 0.875rem;
-      color: #64748b;
-      margin-top: 0.5rem;
-    }
-
-    .customer-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      margin: 1rem 0;
-      padding-top: 1rem;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .stat {
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #2563eb;
-    }
-
-    .stat-label {
-      font-size: 0.75rem;
-      color: #64748b;
-      text-transform: uppercase;
-      margin-top: 0.25rem;
+      opacity: 0.5;
     }
 
     @media (max-width: 768px) {
@@ -440,12 +412,22 @@
         gap: 1rem;
       }
 
-      .search-bar {
+      .page-header {
         flex-direction: column;
+        gap: 1rem;
       }
 
-      .customer-stats {
-        grid-template-columns: 1fr;
+      .sidebar-nav a {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      table {
+        font-size: 0.875rem;
+      }
+
+      th, td {
+        padding: 0.75rem 0.5rem;
       }
 
       .action-buttons {
@@ -464,10 +446,10 @@
           <li><a href="dashboard.html">📊 Dashboard</a></li>
           <li><a href="pos.html">🛒 POS</a></li>
           <li><a href="products.html">📦 Products</a></li>
-          <li><a href="customers.html" class="active">👥 Customers</a></li>
+          <li><a href="customers.html">👥 Customers</a></li>
           <li><a href="sales.html">📋 Sales</a></li>
           <li><a href="reports.html">📈 Reports</a></li>
-          <li id="adminLink" style="display: none;"><a href="users.html">👤 Users</a></li>
+          <li><a href="users.html" class="active">👤 Users</a></li>
         </ul>
       </nav>
     </aside>
@@ -476,7 +458,7 @@
     <div class="main-content">
       <!-- Header -->
       <header class="header">
-        <h1>👥 Customers</h1>
+        <h1>👤 User Management</h1>
         <div class="user-info">
           <span id="currentUser">Loading...</span>
           <span class="user-badge admin" id="roleIndicator"></span>
@@ -487,63 +469,84 @@
       <!-- Content -->
       <div class="content">
         <div class="page-header">
-          <h2>Manage Customers</h2>
-          <button class="btn btn-primary" onclick="openAddCustomerModal()">+ Add Customer</button>
+          <h2>Manage System Users</h2>
+          <button class="btn btn-primary" onclick="openAddUserModal()">+ Add New User</button>
         </div>
 
         <div id="alertContainer"></div>
 
-        <!-- Search Bar -->
-        <div class="search-bar">
-          <input type="text" id="searchInput" placeholder="Search by name, phone, or email..." style="flex: 1;">
-          <button class="btn btn-primary" onclick="searchCustomers()" style="align-self: center;">Search</button>
-          <button class="btn btn-secondary" onclick="loadAllCustomers()" style="align-self: center;">Reset</button>
-        </div>
-
-        <!-- Customers Display -->
-        <div id="customersContainer">
-          <div class="empty-state">Loading customers...</div>
+        <!-- Users Table -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">Loading users...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Add/Edit Customer Modal -->
-  <div class="modal" id="customerModal">
+  <!-- Add/Edit User Modal -->
+  <div class="modal" id="userModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title" id="customerModalTitle">Add New Customer</h2>
-        <button class="close-btn" onclick="closeModal('customerModal')">&times;</button>
+        <h2 class="modal-title" id="userModalTitle">Add New User</h2>
+        <button class="close-btn" onclick="closeModal('userModal')">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="customerModalAlert"></div>
-        <form id="customerForm" onsubmit="handleCustomerFormSubmit(event)">
-          <input type="hidden" id="customerId">
+        <div id="userModalAlert"></div>
+        <form id="userForm" onsubmit="handleUserFormSubmit(event)">
+          <input type="hidden" id="userId">
 
           <div class="form-group">
-            <label for="customerName">Full Name *</label>
-            <input type="text" id="customerName" required placeholder="Enter customer name">
+            <label for="userUsername">Username</label>
+            <input type="text" id="userUsername" required placeholder="Enter username">
           </div>
 
           <div class="form-group">
-            <label for="customerPhone">Phone Number</label>
-            <input type="tel" id="customerPhone" placeholder="Enter phone number">
+            <label for="userEmail">Email</label>
+            <input type="email" id="userEmail" required placeholder="Enter email">
+          </div>
+
+          <div class="form-group" id="passwordGroup">
+            <label for="userPassword">Password</label>
+            <input type="password" id="userPassword" required placeholder="Enter password">
           </div>
 
           <div class="form-group">
-            <label for="customerEmail">Email Address</label>
-            <input type="email" id="customerEmail" placeholder="Enter email address">
+            <label for="userRole">Role</label>
+            <select id="userRole" required>
+              <option value="cashier">Cashier</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Administrator</option>
+            </select>
           </div>
 
           <div class="form-group">
-            <label for="customerAddress">Address</label>
-            <textarea id="customerAddress" placeholder="Enter customer address" rows="3"></textarea>
+            <label for="userActive">Status</label>
+            <select id="userActive">
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('customerModal')">Cancel</button>
-        <button class="btn btn-primary" onclick="submitCustomerForm()">Save Customer</button>
+        <button class="btn btn-secondary" onclick="closeModal('userModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitUserForm()">Save User</button>
       </div>
     </div>
   </div>
@@ -551,183 +554,145 @@
   <script src="../js/api.js"></script>
   <script>
     // Check authorization
-    requireRole(['admin', 'manager', 'cashier']);
+    requireRole('admin');
 
     let currentUser = null;
-    let customers = [];
+    let users = [];
 
     // Initialize page
     document.addEventListener('DOMContentLoaded', async () => {
       await loadCurrentUser();
-      await loadAllCustomers();
+      await loadUsers();
     });
 
     async function loadCurrentUser() {
       try {
         const response = await api.getCurrentUser();
         currentUser = response;
-        document.getElementById('currentUser').textContent = `${response.username}`;
+        document.getElementById('currentUser').textContent = `${response.username} (${response.role})`;
         document.getElementById('roleIndicator').textContent = response.role.toUpperCase();
-        document.getElementById('roleIndicator').className = `user-badge ${response.role}`;
-
-        // Show admin link for admins only
-        if (response.role === 'admin') {
-          document.getElementById('adminLink').style.display = 'block';
-        }
       } catch (error) {
         console.error('Error loading current user:', error);
       }
     }
 
-    async function loadAllCustomers() {
+    async function loadUsers() {
       try {
-        const response = await api.getCustomers(1000);
-        customers = response.data || [];
-        renderCustomers(customers);
+        const response = await api.getAllUsers();
+        users = response.data || [];
+        renderUsersTable();
       } catch (error) {
-        showAlert('Error loading customers: ' + error.message, 'error');
+        showAlert('Error loading users: ' + error.message, 'error');
         console.error(error);
       }
     }
 
-    async function searchCustomers() {
-      const query = document.getElementById('searchInput').value.trim();
-      if (!query) {
-        loadAllCustomers();
+    function renderUsersTable() {
+      const tbody = document.getElementById('usersTableBody');
+
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found</td></tr>';
         return;
       }
 
-      try {
-        const response = await api.searchCustomers(query);
-        customers = response.data || [];
-        renderCustomers(customers);
-      } catch (error) {
-        showAlert('Error searching customers: ' + error.message, 'error');
-        console.error(error);
-      }
-    }
-
-    function renderCustomers(customersToRender) {
-      const container = document.getElementById('customersContainer');
-
-      if (customersToRender.length === 0) {
-        container.innerHTML = '<div class="empty-state">No customers found</div>';
-        return;
-      }
-
-      container.innerHTML = customersToRender.map(customer => `
-        <div class="customer-card">
-          <div class="customer-header">
-            <div>
-              <div class="customer-name">${escapeHtml(customer.name)}</div>
-              <div class="customer-info">
-                ${customer.phone ? `📞 ${escapeHtml(customer.phone)}` : ''}
-                ${customer.email ? `<br>📧 ${escapeHtml(customer.email)}` : ''}
-                ${customer.address ? `<br>📍 ${escapeHtml(customer.address)}` : ''}
-              </div>
+      tbody.innerHTML = users.map(user => `
+        <tr>
+          <td><strong>${escapeHtml(user.username)}</strong></td>
+          <td>${escapeHtml(user.email)}</td>
+          <td><span class="role-badge ${user.role}">${user.role.toUpperCase()}</span></td>
+          <td><span class="status-badge ${user.active ? 'active' : 'inactive'}">${user.active ? 'Active' : 'Inactive'}</span></td>
+          <td>${formatDate(user.created_at)}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-sm btn-secondary" onclick="editUser(${user.user_id})">Edit</button>
+              ${currentUser && currentUser.user_id !== user.user_id ? `
+                <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.user_id})">Delete</button>
+              ` : '<button class="btn btn-sm" style="background: #cbd5e1; color: #64748b; cursor: not-allowed;" disabled>Delete</button>'}
             </div>
-            <span class="status-badge ${customer.status === 'active' ? 'active' : 'inactive'}">
-              ${customer.status === 'active' ? 'Active' : 'Inactive'}
-            </span>
-          </div>
-          <div class="customer-stats">
-            <div class="stat">
-              <div class="stat-value">${customer.loyalty_points}</div>
-              <div class="stat-label">Loyalty Points</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">₵${parseFloat(customer.total_purchases).toFixed(2)}</div>
-              <div class="stat-label">Total Purchases</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">${new Date(customer.created_at).toLocaleDateString()}</div>
-              <div class="stat-label">Member Since</div>
-            </div>
-          </div>
-          <div class="action-buttons" style="margin-top: 1rem;">
-            <button class="btn btn-sm btn-primary" onclick="editCustomer(${customer.customer_id})" style="flex: 1;">Edit</button>
-            <button class="btn btn-sm btn-secondary" onclick="viewCustomerDetails(${customer.customer_id})" style="flex: 1;">View</button>
-          </div>
-        </div>
+          </td>
+        </tr>
       `).join('');
     }
 
-    function openAddCustomerModal() {
-      document.getElementById('customerId').value = '';
-      document.getElementById('customerForm').reset();
-      document.getElementById('customerModalTitle').textContent = 'Add New Customer';
-      document.getElementById('customerModalAlert').innerHTML = '';
-      openModal('customerModal');
+    function openAddUserModal() {
+      document.getElementById('userId').value = '';
+      document.getElementById('userForm').reset();
+      document.getElementById('userModalTitle').textContent = 'Add New User';
+      document.getElementById('passwordGroup').style.display = 'block';
+      document.getElementById('userPassword').required = true;
+      document.getElementById('userModalAlert').innerHTML = '';
+      openModal('userModal');
     }
 
-    function editCustomer(customerId) {
-      const customer = customers.find(c => c.customer_id === customerId);
-      if (!customer) return;
+    function editUser(userId) {
+      const user = users.find(u => u.user_id === userId);
+      if (!user) return;
 
-      document.getElementById('customerId').value = customerId;
-      document.getElementById('customerName').value = customer.name;
-      document.getElementById('customerPhone').value = customer.phone || '';
-      document.getElementById('customerEmail').value = customer.email || '';
-      document.getElementById('customerAddress').value = customer.address || '';
-      document.getElementById('customerModalTitle').textContent = 'Edit Customer';
-      document.getElementById('customerModalAlert').innerHTML = '';
-      openModal('customerModal');
+      document.getElementById('userId').value = userId;
+      document.getElementById('userUsername').value = user.username;
+      document.getElementById('userEmail').value = user.email;
+      document.getElementById('userRole').value = user.role;
+      document.getElementById('userActive').value = user.active ? '1' : '0';
+      document.getElementById('userModalTitle').textContent = 'Edit User';
+      document.getElementById('passwordGroup').style.display = 'none';
+      document.getElementById('userPassword').required = false;
+      document.getElementById('userModalAlert').innerHTML = '';
+      openModal('userModal');
     }
 
-    function viewCustomerDetails(customerId) {
-      const customer = customers.find(c => c.customer_id === customerId);
-      if (!customer) return;
-
-      const details = `
-        <strong>${escapeHtml(customer.name)}</strong><br>
-        Phone: ${customer.phone || 'N/A'}<br>
-        Email: ${customer.email || 'N/A'}<br>
-        Address: ${customer.address || 'N/A'}<br>
-        <hr>
-        Total Purchases: ₵${parseFloat(customer.total_purchases).toFixed(2)}<br>
-        Loyalty Points: ${customer.loyalty_points}<br>
-        Member Since: ${new Date(customer.created_at).toLocaleDateString()}<br>
-        Status: ${customer.status === 'active' ? '✅ Active' : '❌ Inactive'}
-      `;
-
-      alert(details);
-    }
-
-    async function handleCustomerFormSubmit(event) {
+    async function handleUserFormSubmit(event) {
       event.preventDefault();
     }
 
-    async function submitCustomerForm() {
-      const customerId = document.getElementById('customerId').value;
-      const name = document.getElementById('customerName').value.trim();
-      const phone = document.getElementById('customerPhone').value.trim();
-      const email = document.getElementById('customerEmail').value.trim();
-      const address = document.getElementById('customerAddress').value.trim();
+    async function submitUserForm() {
+      const userId = document.getElementById('userId').value;
+      const username = document.getElementById('userUsername').value.trim();
+      const email = document.getElementById('userEmail').value.trim();
+      const password = document.getElementById('userPassword').value;
+      const role = document.getElementById('userRole').value;
+      const active = document.getElementById('userActive').value === '1';
 
-      const alertDiv = document.getElementById('customerModalAlert');
+      const alertDiv = document.getElementById('userModalAlert');
 
-      if (!name) {
-        showModalAlert('Customer name is required', 'error', alertDiv);
+      if (!username || !email) {
+        showModalAlert('Please fill in all required fields', 'error', alertDiv);
         return;
       }
 
       try {
-        const data = { name, phone, email, address };
-
-        if (customerId) {
-          // Edit customer
-          await api.updateCustomer(customerId, data);
-          showAlert('Customer updated successfully', 'success');
+        if (userId) {
+          // Edit user
+          const updates = { role, active };
+          if (email) updates.email = email;
+          await api.updateUser(userId, updates);
+          showAlert('User updated successfully', 'success');
         } else {
-          // Create new customer
-          await api.createCustomer(data);
-          showAlert('Customer created successfully', 'success');
+          // Create new user
+          if (!password) {
+            showModalAlert('Password is required for new users', 'error', alertDiv);
+            return;
+          }
+          await api.registerUser(username, email, password, role);
+          showAlert('User created successfully', 'success');
         }
-
-        closeModal('customerModal');
-        await loadAllCustomers();
+        closeModal('userModal');
+        await loadUsers();
       } catch (error) {
         showModalAlert(error.message, 'error', alertDiv);
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        await api.deleteUser(userId);
+        showAlert('User deleted successfully', 'success');
+        await loadUsers();
+      } catch (error) {
+        showAlert('Error deleting user: ' + error.message, 'error');
       }
     }
 
