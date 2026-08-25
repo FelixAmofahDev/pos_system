@@ -364,13 +364,13 @@ function hasRole(requiredRoles) {
 // Redirect to login if not authenticated
 function requireAuth() {
   if (!isLoggedIn()) {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/frontend/pages/login.html';
   }
 }
 
 // Redirect to login if not authorized
 function requireRole(roles) {
   if (!isLoggedIn() || !hasRole(roles)) {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/frontend/pages/login.html';
   }
 }

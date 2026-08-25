@@ -395,6 +395,36 @@
       opacity: 0.5;
     }
 
+    /* Mobile menu toggle */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      color: var(--text);
+    }
+
+    .menu-toggle:hover {
+      color: var(--primary);
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 998;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
     @media (max-width: 768px) {
       .layout {
         grid-template-columns: 1fr;
@@ -440,6 +470,7 @@
   <div class="layout">
     <!-- Sidebar -->
     <aside class="sidebar">
+      <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
       <div class="sidebar-header">🏪 POS</div>
       <nav>
         <ul class="sidebar-nav">
@@ -458,6 +489,7 @@
     <div class="main-content">
       <!-- Header -->
       <header class="header">
+        <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
         <h1>👤 User Management</h1>
         <div class="user-info">
           <div>
@@ -751,6 +783,17 @@
 
     function closeModal(modalId) {
       document.getElementById(modalId).classList.remove('active');
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.getElementById('overlay');
+      if (sidebar) {
+        sidebar.classList.toggle('active');
+      }
+      if (overlay) {
+        overlay.classList.toggle('active');
+      }
     }
   </script>
 </body>
