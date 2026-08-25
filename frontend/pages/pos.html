@@ -797,69 +797,61 @@
     }
 
     function openCameraScanner() {
-      const readerDiv = document.getElementById('cameraScannerReader');
-      const statusDiv = document.getElementById('cameraScannerStatus');
-      if (!readerDiv) return;
+  const readerDiv = document.getElementById('cameraScannerReader');
+  const statusDiv = document.getElementById('cameraScannerStatus');
+  if (!readerDiv) return;
 
-      if (html5QrcodeScanner) {
-        try {
-          html5QrcodeScanner.clear().catch(() => {});
-        } catch (e) {
-          console.error('Error clearing previous scanner:', e);
-        }
-        html5QrcodeScanner = null;
-      }
+  if (html5QrcodeScanner) {
+    try {
+      html5QrcodeScanner.clear().catch(() => {});
+    } catch (e) {
+      console.error('Error clearing previous scanner:', e);
+    }
+    html5QrcodeScanner = null;
+  }
 
-      if (statusDiv) {
-        statusDiv.textContent = 'Starting camera...';
-        statusDiv.style.color = '#64748b';
-      }
+  if (statusDiv) {
+    statusDiv.textContent = 'Starting camera...';
+    statusDiv.style.color = '#64748b';
+  }
 
-      const startScanner = () => {
-        try {
-          html5QrcodeScanner = new Html5QrcodeScanner('cameraScannerReader', {
-            fps: 10,
-            qrbox: { width: 250, height: 150 }
-          });
+  const startScanner = () => {
+    try {
+      html5QrcodeScanner = new Html5QrcodeScanner('cameraScannerReader', {
+        fps: 10,
+        qrbox: { width: 250, height: 150 }
+      });
 
-          try {
-            html5QrcodeScanner.render(
-              (decodedText) => {
-                if (statusDiv) {
-                  statusDiv.textContent = 'Scanned!';
-                  statusDiv.style.color = '#10b981';
-                }
-                onCameraBarcodeScanned(decodedText);
-              },
-              (errorMessage) => {
-                if (statusDiv && statusDiv.textContent !== 'Scanned!') {
-                  statusDiv.textContent = 'Scanning...';
-                  statusDiv.style.color = '#64748b';
-                }
-              }
-            );
-          } catch (renderErr) {
-            console.error('Camera scanner render error:', renderErr);
-            if (statusDiv) {
-              statusDiv.textContent = 'Camera unavailable. Use manual entry above.';
-              statusDiv.style.color = '#ef4444';
-            }
-          }
-        } catch (err) {
-          console.error('Scanner init error:', err);
+      html5QrcodeScanner.render(
+        (decodedText) => {
           if (statusDiv) {
-            statusDiv.textContent = 'Failed to start scanner. Use manual entry above.';
-            statusDiv.style.color = '#ef4444';
+            statusDiv.textContent = 'Scanned!';
+            statusDiv.style.color = '#10b981';
+          }
+          onCameraBarcodeScanned(decodedText);
+        },
+        (errorMessage) => {
+          if (statusDiv && statusDiv.textContent !== 'Scanned!') {
+            statusDiv.textContent = 'Scanning...';
+            statusDiv.style.color = '#64748b';
           }
         }
-      };
-
-      if (document.readyState === 'complete') {
-        requestAnimationFrame(() => setTimeout(startScanner, 50));
-      } else {
-        window.addEventListener('load', startScanner);
+      );
+    } catch (err) {
+      console.error('Scanner init error:', err);
+      if (statusDiv) {
+        statusDiv.textContent = 'Failed to start scanner. Use manual entry above.';
+        statusDiv.style.color = '#ef4444';
       }
     }
+  };
+
+  if (document.readyState === 'complete') {
+    requestAnimationFrame(() => setTimeout(startScanner, 50));
+  } else {
+    window.addEventListener('load', startScanner);
+  }
+}
 
     function closeCameraScanner() {
       const modal = document.getElementById('cameraScannerModal');
