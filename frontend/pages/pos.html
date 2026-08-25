@@ -407,6 +407,7 @@
           <select id="categoryFilter">
             <option value="">All Categories</option>
           </select>
+          <button type="button" id="cameraScanBtn" style="padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: white; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">📷 Scan</button>
         </div>
         <div class="user-menu" style="margin: 0;">
           <div class="user-info" onclick="toggleUserMenu()" style="gap: 0.5rem;">
@@ -449,6 +450,18 @@
         <button class="btn-checkout" onclick="proceedToCheckout()">Checkout</button>
         <button class="btn-clear" onclick="clearCart()">Clear Cart</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Camera Barcode Scanner Modal -->
+  <div class="modal" id="cameraScannerModal">
+    <div class="modal-content p-4" style="max-width: 500px;">
+      <h2 style="color: #1e293b; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <span>Scan Barcode</span>
+        <button type="button" onclick="closeCameraScanner()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+      </h2>
+      <div id="cameraScannerReader" style="background: #000; border-radius: 0.5rem; overflow: hidden;"></div>
+      <p style="color: #64748b; font-size: 0.875rem; margin-top: 0.75rem; text-align: center;">Position the barcode within the camera view to scan.</p>
     </div>
   </div>
 
@@ -531,6 +544,7 @@
   </div>
 
   <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
     requireAuth();
@@ -712,6 +726,81 @@
 
       // Amount paid calculation
       document.getElementById('amountPaid').addEventListener('input', calculateChange);
+
+      // Camera barcode scanner
+      let html5QrcodeScanner = null;
+      const cameraScanBtn = document.getElementById('cameraScanBtn');
+      if (cameraScanBtn) {
+        cameraScanBtn.addEventListener('click', openCameraScanner);
+      }
+    }
+
+    function openCameraScanner() {
+      const modal = document.getElementById('cameraScannerModal');
+      if (!modal) return;
+      modal.classList.add('active');
+
+      const readerDiv = document.getElementById('cameraScannerReader');
+      if (!readerDiv) return;
+
+      if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner('cameraScannerReader', {
+          fps: 10,
+          qrbox: { width: 250, height: 150 },
+          aspectRatio: 1.0
+        });
+      }
+
+      html5QrcodeScanner.render(
+        (decodedText) => {
+          onCameraBarcodeScanned(decodedText);
+        },
+        () => {}
+      ).catch((err) => {
+        console.error('Camera scanner error:', err);
+        showAlert('Unable to start camera scanner. Please allow camera permissions.', 'error');
+        closeCameraScanner();
+      });
+    }
+
+    function closeCameraScanner() {
+      const modal = document.getElementById('cameraScannerModal');
+      if (modal) {
+        modal.classList.remove('active');
+      }
+
+      if (html5QrcodeScanner) {
+        try {
+          html5QrcodeScanner.clear().catch(() => {});
+        } catch (e) {
+          console.error('Error clearing scanner:', e);
+        }
+      }
+    }
+
+    function onCameraBarcodeScanned(barcode) {
+      closeCameraScanner();
+
+      const query = barcode.trim().toLowerCase();
+      if (!query) return;
+
+      const product = products.find(p =>
+        (p.barcode && p.barcode.toLowerCase() === query) ||
+        p.name.toLowerCase().includes(query)
+      );
+
+      if (product) {
+        addToCart(product.product_id);
+        showAlert(`Added ${product.name} to cart`, 'success');
+      } else {
+        showAlert(`Product not found: ${barcode}`, 'error');
+      }
+
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
     }
 
     function addToCart(productId) {
