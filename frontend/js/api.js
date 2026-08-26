@@ -1,6 +1,6 @@
 // API Configuration and Utility Functions
 
-const API_BASE_URL = `https://m96fj3tl-5000.uks1.devtunnels.ms/api`;
+const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port}/api`;
 
 class APIClient {
   constructor() {
