@@ -570,6 +570,10 @@
     let categories = [];
     let currentReceiptData = null; // Store receipt data for printing
     let html5QrcodeScanner = null;
+    let lastScanTime = 0;
+    const SCAN_COOLDOWN_MS = 2000;
+    let cameraScanning = false;
+    let scanSessionId = 0;
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getCurrentUser();
@@ -752,12 +756,28 @@
       const manualBarcodeInput = document.getElementById('manualBarcodeInput');
 
       if (cameraScanBtn) {
-        cameraScanBtn.addEventListener('click', () => {
+        cameraScanBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
           const modal = document.getElementById('cameraScannerModal');
-          if (modal) modal.classList.add('active');
+          if (!modal) return;
+
+          if (modal.classList.contains('active')) {
+            return;
+          }
+
+          await closeCameraScanner();
+
           if (cameraScannerReader) cameraScannerReader.style.display = 'none';
           if (cameraScannerStatus) cameraScannerStatus.textContent = '';
-          if (manualBarcodeInput) setTimeout(() => manualBarcodeInput.focus(), 100);
+          if (manualBarcodeInput) manualBarcodeInput.value = '';
+
+          modal.classList.add('active');
+
+          if (manualBarcodeInput) {
+            setTimeout(() => manualBarcodeInput.focus(), 100);
+          }
         });
       }
 
@@ -792,9 +812,17 @@
     }
 
     async function startCameraScanner() {
+      if (cameraScanning) return;
+      cameraScanning = true;
+      scanSessionId++;
+      const currentSessionId = scanSessionId;
+
       const readerDiv = document.getElementById('cameraScannerReader');
       const statusDiv = document.getElementById('cameraScannerStatus');
-      if (!readerDiv || !statusDiv) return;
+      if (!readerDiv || !statusDiv) {
+        cameraScanning = false;
+        return;
+      }
 
       if (html5QrcodeScanner) {
         try {
@@ -821,6 +849,21 @@
             aspectRatio: 1.0
           },
           (decodedText) => {
+            if (scanSessionId !== currentSessionId) {
+              return;
+            }
+
+            const modal = document.getElementById('cameraScannerModal');
+            if (!modal || !modal.classList.contains('active')) {
+              return;
+            }
+
+            const now = Date.now();
+            if (now - lastScanTime < SCAN_COOLDOWN_MS) {
+              return;
+            }
+            lastScanTime = now;
+
             statusDiv.textContent = 'Scanned!';
             statusDiv.style.color = '#10b981';
             onCameraBarcodeScanned(decodedText);
@@ -838,10 +881,13 @@
         console.error('Camera scanner error:', err);
         statusDiv.textContent = 'Camera unavailable. Use manual entry above.';
         statusDiv.style.color = '#ef4444';
+      } finally {
+        cameraScanning = false;
       }
     }
 
     async function closeCameraScanner() {
+      scanSessionId++;
       const modal = document.getElementById('cameraScannerModal');
       if (modal) {
         modal.classList.remove('active');
@@ -860,13 +906,16 @@
         }
         html5QrcodeScanner = null;
       }
+
+      cameraScanning = false;
     }
 
     async function onCameraBarcodeScanned(barcode) {
-      await closeCameraScanner();
-
       const query = barcode.trim().toLowerCase();
-      if (!query) return;
+      if (!query) {
+        await closeCameraScanner();
+        return;
+      }
 
       const product = products.find(p =>
         (p.barcode && p.barcode.toLowerCase() === query) ||
@@ -876,8 +925,19 @@
       if (product) {
         addToCart(product.product_id);
         showAlert(`Added ${product.name} to cart`, 'success');
+        await closeCameraScanner();
       } else {
         showAlert(`Product not found: ${barcode}`, 'error');
+        const statusDiv = document.getElementById('cameraScannerStatus');
+        if (statusDiv) {
+          statusDiv.textContent = 'Not found. Try again.';
+          statusDiv.style.color = '#ef4444';
+        }
+        const manualInput = document.getElementById('manualBarcodeInput');
+        if (manualInput) {
+          manualInput.value = '';
+          manualInput.focus();
+        }
       }
 
       const searchInput = document.getElementById('searchInput');
