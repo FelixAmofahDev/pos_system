@@ -463,7 +463,7 @@
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
         <p style="margin: 0 0 0.5rem; font-weight: 600; color: #1e293b;">📱 Manual Entry</p>
-        <p style="margin: 0 0 0.75rem; font-size: 0.875rem; color: #64748b;">Type or paste the barcode below, then tap Add.</p>
+        <p style="margin: 0 0 0.75rem; font-size: 0.875rem; color: #64748b;">Type or paste the barcode below, then tap Add or press Enter.</p>
         <div style="display: flex; gap: 0.5rem;">
           <input type="text" id="manualBarcodeInput" placeholder="Enter barcode..." autocomplete="off" style="flex: 1; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 1rem;">
           <button type="button" id="manualBarcodeBtn" style="padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; background: #2563eb; color: white; font-weight: 600; cursor: pointer;">Add</button>
@@ -748,112 +748,100 @@
       const cameraScanNowBtn = document.getElementById('cameraScanNowBtn');
       const cameraScannerReader = document.getElementById('cameraScannerReader');
       const cameraScannerStatus = document.getElementById('cameraScannerStatus');
+      const manualBarcodeBtn = document.getElementById('manualBarcodeBtn');
+      const manualBarcodeInput = document.getElementById('manualBarcodeInput');
 
       if (cameraScanBtn) {
         cameraScanBtn.addEventListener('click', () => {
           const modal = document.getElementById('cameraScannerModal');
-          if (modal) {
-            modal.classList.add('active');
-          }
+          if (modal) modal.classList.add('active');
           if (cameraScannerReader) cameraScannerReader.style.display = 'none';
-          if (cameraScannerStatus) {
-            cameraScannerStatus.textContent = '';
-          }
+          if (cameraScannerStatus) cameraScannerStatus.textContent = '';
+          if (manualBarcodeInput) setTimeout(() => manualBarcodeInput.focus(), 100);
         });
       }
 
-      if (cameraScanNowBtn) {
-        cameraScanNowBtn.addEventListener('click', () => {
-          if (cameraScannerReader) cameraScannerReader.style.display = 'block';
-          if (cameraScannerStatus) {
-            cameraScannerStatus.textContent = 'Starting camera...';
-            cameraScannerStatus.style.color = '#64748b';
-          }
-          openCameraScanner();
+      if (cameraScanNowBtn && cameraScannerReader && cameraScannerStatus) {
+        cameraScanNowBtn.addEventListener('click', async () => {
+          cameraScannerReader.style.display = 'block';
+          cameraScannerStatus.textContent = 'Starting camera...';
+          cameraScannerStatus.style.color = '#64748b';
+          await startCameraScanner();
         });
       }
 
-      const manualBarcodeBtn = document.getElementById('manualBarcodeBtn');
-      const manualBarcodeInput = document.getElementById('manualBarcodeInput');
-      if (manualBarcodeBtn && manualBarcodeInput) {
-        manualBarcodeBtn.addEventListener('click', () => {
-          const value = manualBarcodeInput.value.trim();
-          if (value) {
-            onCameraBarcodeScanned(value);
-            manualBarcodeInput.value = '';
-          }
-        });
+      async function handleManualBarcode() {
+        if (!manualBarcodeInput) return;
+        const value = manualBarcodeInput.value.trim();
+        if (!value) return;
+        manualBarcodeInput.value = '';
+        await onCameraBarcodeScanned(value);
+      }
+
+      if (manualBarcodeBtn) {
+        manualBarcodeBtn.addEventListener('click', handleManualBarcode);
+      }
+      if (manualBarcodeInput) {
         manualBarcodeInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            const value = manualBarcodeInput.value.trim();
-            if (value) {
-              onCameraBarcodeScanned(value);
-              manualBarcodeInput.value = '';
-            }
+            handleManualBarcode();
           }
         });
       }
     }
 
-    function openCameraScanner() {
-  const readerDiv = document.getElementById('cameraScannerReader');
-  const statusDiv = document.getElementById('cameraScannerStatus');
-  if (!readerDiv) return;
+    async function startCameraScanner() {
+      const readerDiv = document.getElementById('cameraScannerReader');
+      const statusDiv = document.getElementById('cameraScannerStatus');
+      if (!readerDiv || !statusDiv) return;
 
-  if (html5QrcodeScanner) {
-    try {
-      html5QrcodeScanner.clear().catch(() => {});
-    } catch (e) {
-      console.error('Error clearing previous scanner:', e);
-    }
-    html5QrcodeScanner = null;
-  }
+      if (html5QrcodeScanner) {
+        try {
+          await html5QrcodeScanner.clear();
+        } catch (e) {
+          console.error('Error clearing previous scanner:', e);
+        }
+        html5QrcodeScanner = null;
+      }
 
-  if (statusDiv) {
-    statusDiv.textContent = 'Starting camera...';
-    statusDiv.style.color = '#64748b';
-  }
+      statusDiv.textContent = 'Requesting camera...';
+      statusDiv.style.color = '#64748b';
 
-  const startScanner = () => {
-    try {
-      html5QrcodeScanner = new Html5QrcodeScanner('cameraScannerReader', {
-        fps: 10,
-        qrbox: { width: 250, height: 150 }
-      });
+      try {
+        html5QrcodeScanner = new Html5Qrcode('cameraScannerReader');
+        const cameras = await Html5Qrcode.getCameras();
+        const camera = cameras.find(c => c.label && c.label.toLowerCase().includes('back')) || cameras[0];
 
-      html5QrcodeScanner.render(
-        (decodedText) => {
-          if (statusDiv) {
+        await html5QrcodeScanner.start(
+          camera.id,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+            aspectRatio: 1.0
+          },
+          (decodedText) => {
             statusDiv.textContent = 'Scanned!';
             statusDiv.style.color = '#10b981';
+            onCameraBarcodeScanned(decodedText);
+          },
+          () => {
+            if (statusDiv && statusDiv.textContent !== 'Scanned!') {
+              statusDiv.textContent = 'Scanning...';
+              statusDiv.style.color = '#64748b';
+            }
           }
-          onCameraBarcodeScanned(decodedText);
-        },
-        (errorMessage) => {
-          if (statusDiv && statusDiv.textContent !== 'Scanned!') {
-            statusDiv.textContent = 'Scanning...';
-            statusDiv.style.color = '#64748b';
-          }
-        }
-      );
-    } catch (err) {
-      console.error('Scanner init error:', err);
-      if (statusDiv) {
-        statusDiv.textContent = 'Failed to start scanner. Use manual entry above.';
+        );
+        statusDiv.textContent = 'Scanning...';
+        statusDiv.style.color = '#64748b';
+      } catch (err) {
+        console.error('Camera scanner error:', err);
+        statusDiv.textContent = 'Camera unavailable. Use manual entry above.';
         statusDiv.style.color = '#ef4444';
       }
     }
-  };
 
-  if (document.readyState === 'complete') {
-    requestAnimationFrame(() => setTimeout(startScanner, 50));
-  } else {
-    window.addEventListener('load', startScanner);
-  }
-}
-
-    function closeCameraScanner() {
+    async function closeCameraScanner() {
       const modal = document.getElementById('cameraScannerModal');
       if (modal) {
         modal.classList.remove('active');
@@ -866,7 +854,7 @@
 
       if (html5QrcodeScanner) {
         try {
-          html5QrcodeScanner.clear().catch(() => {});
+          await html5QrcodeScanner.clear();
         } catch (e) {
           console.error('Error clearing scanner:', e);
         }
@@ -874,8 +862,8 @@
       }
     }
 
-    function onCameraBarcodeScanned(barcode) {
-      closeCameraScanner();
+    async function onCameraBarcodeScanned(barcode) {
+      await closeCameraScanner();
 
       const query = barcode.trim().toLowerCase();
       if (!query) return;
