@@ -871,21 +871,27 @@
       statusDiv.style.color = '#64748b';
 
       try {
-        if (!inferenceSession) {
-          metrics.textContent = 'Model: loading | Inference: --';
-          ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-          inferenceSession = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'] });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Camera access requires HTTPS (or localhost) and a supported browser.');
         }
-
-        barcodeReader = barcodeReader || new ZXingBrowser.BrowserMultiFormatReader();
         cameraStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
         });
         video.srcObject = cameraStream;
         await video.play();
-        statusDiv.textContent = 'Scanning...';
+        statusDiv.textContent = 'Camera ready. Loading detector model...';
         statusDiv.style.color = '#10b981';
+        metrics.textContent = 'Model: loading | Inference: --';
+
+        if (!inferenceSession) {
+          if (!window.ort) throw new Error('ONNX Runtime failed to load from the CDN.');
+          ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+          inferenceSession = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'] });
+        }
+        if (!window.ZXingBrowser) throw new Error('ZXing failed to load from the CDN.');
+        barcodeReader = barcodeReader || new ZXingBrowser.BrowserMultiFormatReader();
+        statusDiv.textContent = 'Scanning...';
         metrics.textContent = 'Model: ready | Inference: --';
         lastDetectionTime = 0;
         const render = (timestamp) => {
