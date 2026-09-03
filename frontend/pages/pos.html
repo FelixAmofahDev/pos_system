@@ -474,7 +474,16 @@
         <p style="margin: 0 0 0.5rem; font-weight: 600; color: #1e293b;">📷 Camera Scan</p>
         <p style="margin: 0 0 0.75rem; font-size: 0.875rem; color: #64748b;">Camera scanning requires HTTPS and camera permission.</p>
         <button type="button" id="cameraScanNowBtn" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: white; color: #1e293b; font-weight: 600; cursor: pointer;">Start Camera Scan</button>
-        <div id="cameraScannerReader" style="background: #000; border-radius: 0.5rem; overflow: hidden; min-height: 220px; margin-top: 0.75rem; display: none;"></div>
+        <div id="cameraScannerReader" style="background: #020617; border-radius: 0.5rem; overflow: hidden; margin-top: 0.75rem; display: none;">
+          <div style="position: relative; width: 100%; aspect-ratio: 4 / 3;">
+            <video id="cameraScannerVideo" autoplay muted playsinline style="display: block; width: 100%; height: 100%; object-fit: contain;"></video>
+            <canvas id="cameraScannerOverlay" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+          </div>
+          <div style="padding: 0.65rem 0.75rem; color: #cbd5e1; font-size: 0.78rem; display: grid; gap: 0.25rem;">
+            <div id="cameraScannerMetrics">Model: loading | Inference: --</div>
+            <div id="cameraScannerHistory" style="max-height: 4.5rem; overflow: auto; color: #86efac;">Decoded values will appear here.</div>
+          </div>
+        </div>
         <div id="cameraScannerStatus" style="color: #64748b; font-size: 0.875rem; margin-top: 0.5rem; text-align: center;"></div>
       </div>
     </div>
@@ -559,7 +568,8 @@
   </div>
 
   <script src="https://js.paystack.co/v1/inline.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
     requireAuth();
@@ -569,11 +579,30 @@
     let filteredProducts = [];
     let categories = [];
     let currentReceiptData = null; // Store receipt data for printing
-    let html5QrcodeScanner = null;
+    const MODEL_URL = '../models/barcode_detector.simplified.onnx';
+    const SCORE_THRESHOLD = 0.25;
+    const DETECTION_INTERVAL_MS = 180;
+    const DETECTOR_SIZE = 320;
+    const MAX_HISTORY_ITEMS = 8;
     let lastScanTime = 0;
     const SCAN_COOLDOWN_MS = 2000;
     let cameraScanning = false;
     let scanSessionId = 0;
+    let cameraStream = null;
+    let detectionFrameId = null;
+    let inferenceSession = null;
+    let barcodeReader = null;
+    let lastDetectionTime = 0;
+    let inferenceBusy = false;
+    const scannerHistory = [];
+    const detectorCanvas = document.createElement('canvas');
+    detectorCanvas.width = DETECTOR_SIZE;
+    detectorCanvas.height = DETECTOR_SIZE;
+    const detectorContext = detectorCanvas.getContext('2d', { willReadFrequently: true });
+    const cropCanvas = document.createElement('canvas');
+    const cropContext = cropCanvas.getContext('2d', { willReadFrequently: true });
+    const rotationCanvas = document.createElement('canvas');
+    const rotationContext = rotationCanvas.getContext('2d', { willReadFrequently: true });
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getCurrentUser();
@@ -783,7 +812,13 @@
 
       if (cameraScanNowBtn && cameraScannerReader && cameraScannerStatus) {
         cameraScanNowBtn.addEventListener('click', async () => {
+          if (cameraScanning) {
+            await closeCameraScanner();
+            cameraScanNowBtn.textContent = 'Start Camera Scan';
+            return;
+          }
           cameraScannerReader.style.display = 'block';
+          cameraScanNowBtn.textContent = 'Stop Camera Scan';
           cameraScannerStatus.textContent = 'Starting camera...';
           cameraScannerStatus.style.color = '#64748b';
           await startCameraScanner();
@@ -824,64 +859,55 @@
         return;
       }
 
-      if (html5QrcodeScanner) {
-        try {
-          await html5QrcodeScanner.clear();
-        } catch (e) {
-          console.error('Error clearing previous scanner:', e);
-        }
-        html5QrcodeScanner = null;
+      const video = document.getElementById('cameraScannerVideo');
+      const overlay = document.getElementById('cameraScannerOverlay');
+      const metrics = document.getElementById('cameraScannerMetrics');
+      if (!video || !overlay || !metrics) {
+        cameraScanning = false;
+        return;
       }
 
       statusDiv.textContent = 'Requesting camera...';
       statusDiv.style.color = '#64748b';
 
       try {
-        html5QrcodeScanner = new Html5Qrcode('cameraScannerReader');
-        const cameras = await Html5Qrcode.getCameras();
-        const camera = cameras.find(c => c.label && c.label.toLowerCase().includes('back')) || cameras[0];
+        if (!inferenceSession) {
+          metrics.textContent = 'Model: loading | Inference: --';
+          ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+          inferenceSession = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'] });
+        }
 
-        await html5QrcodeScanner.start(
-          camera.id,
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 150 },
-            aspectRatio: 1.0
-          },
-          (decodedText) => {
-            if (scanSessionId !== currentSessionId) {
-              return;
-            }
-
-            const modal = document.getElementById('cameraScannerModal');
-            if (!modal || !modal.classList.contains('active')) {
-              return;
-            }
-
-            const now = Date.now();
-            if (now - lastScanTime < SCAN_COOLDOWN_MS) {
-              return;
-            }
-            lastScanTime = now;
-
-            statusDiv.textContent = 'Scanned!';
-            statusDiv.style.color = '#10b981';
-            onCameraBarcodeScanned(decodedText);
-          },
-          () => {
-            if (statusDiv && statusDiv.textContent !== 'Scanned!') {
-              statusDiv.textContent = 'Scanning...';
-              statusDiv.style.color = '#64748b';
-            }
-          }
-        );
+        barcodeReader = barcodeReader || new ZXingBrowser.BrowserMultiFormatReader();
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        video.srcObject = cameraStream;
+        await video.play();
         statusDiv.textContent = 'Scanning...';
-        statusDiv.style.color = '#64748b';
+        statusDiv.style.color = '#10b981';
+        metrics.textContent = 'Model: ready | Inference: --';
+        lastDetectionTime = 0;
+        const render = (timestamp) => {
+          if (!cameraScanning || scanSessionId !== currentSessionId) return;
+          if (!inferenceBusy && timestamp - lastDetectionTime >= DETECTION_INTERVAL_MS && video.readyState >= 2) {
+            lastDetectionTime = timestamp;
+            runDetection(video, overlay, metrics, statusDiv, currentSessionId);
+          }
+          detectionFrameId = requestAnimationFrame(render);
+        };
+        detectionFrameId = requestAnimationFrame(render);
       } catch (err) {
         console.error('Camera scanner error:', err);
-        statusDiv.textContent = 'Camera unavailable. Use manual entry above.';
+        const message = err.name === 'NotAllowedError'
+          ? 'Camera permission was denied. Allow camera access or use manual entry.'
+          : err.name === 'NotFoundError'
+            ? 'No camera was found on this device. Use manual entry.'
+            : `Scanner unavailable: ${err.message || 'check the model file and camera permissions.'}`;
+        statusDiv.textContent = message;
         statusDiv.style.color = '#ef4444';
-      } finally {
+        metrics.textContent = 'Model: error | Inference: --';
+        await stopCameraStream();
         cameraScanning = false;
       }
     }
@@ -895,19 +921,146 @@
 
       const readerDiv = document.getElementById('cameraScannerReader');
       const statusDiv = document.getElementById('cameraScannerStatus');
+      const cameraScanNowBtn = document.getElementById('cameraScanNowBtn');
       if (readerDiv) readerDiv.style.display = 'none';
       if (statusDiv) statusDiv.textContent = '';
-
-      if (html5QrcodeScanner) {
-        try {
-          await html5QrcodeScanner.clear();
-        } catch (e) {
-          console.error('Error clearing scanner:', e);
-        }
-        html5QrcodeScanner = null;
-      }
-
+      if (cameraScanNowBtn) cameraScanNowBtn.textContent = 'Start Camera Scan';
+      if (detectionFrameId) cancelAnimationFrame(detectionFrameId);
+      detectionFrameId = null;
+      clearOverlay();
+      await stopCameraStream();
       cameraScanning = false;
+    }
+
+    async function stopCameraStream() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      const video = document.getElementById('cameraScannerVideo');
+      if (video) video.srcObject = null;
+    }
+
+    async function runDetection(video, overlay, metrics, statusDiv, currentSessionId) {
+      inferenceBusy = true;
+      const startedAt = performance.now();
+      try {
+        const originalWidth = video.videoWidth;
+        const originalHeight = video.videoHeight;
+        detectorContext.drawImage(video, 0, 0, DETECTOR_SIZE, DETECTOR_SIZE);
+        const pixels = detectorContext.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
+        const input = new Float32Array(3 * DETECTOR_SIZE * DETECTOR_SIZE);
+        for (let y = 0; y < DETECTOR_SIZE; y++) {
+          for (let x = 0; x < DETECTOR_SIZE; x++) {
+            const pixel = (y * DETECTOR_SIZE + x) * 4;
+            const index = y * DETECTOR_SIZE + x;
+            input[index] = pixels[pixel] / 255;
+            input[DETECTOR_SIZE * DETECTOR_SIZE + index] = pixels[pixel + 1] / 255;
+            input[2 * DETECTOR_SIZE * DETECTOR_SIZE + index] = pixels[pixel + 2] / 255;
+          }
+        }
+        const outputs = await inferenceSession.run({ input: new ort.Tensor('float32', input, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]) });
+        if (!cameraScanning || scanSessionId !== currentSessionId) return;
+        const boxes = outputs.boxes.data;
+        const scores = outputs.scores.data;
+        const labels = outputs.labels.data;
+        const detections = [];
+        for (let index = 0; index < scores.length; index++) {
+          if (scores[index] >= SCORE_THRESHOLD && labels[index] === 1) {
+            detections.push({ box: boxes.slice(index * 4, index * 4 + 4), score: scores[index] });
+          }
+        }
+        const decoded = [];
+        for (const detection of detections) {
+          const value = await decodeDetection(detection.box, originalWidth, originalHeight, video);
+          decoded.push({ ...detection, value });
+          if (value && Date.now() - lastScanTime >= SCAN_COOLDOWN_MS) {
+            lastScanTime = Date.now();
+            addScannerHistory(value);
+            onCameraBarcodeScanned(value);
+          }
+        }
+        drawOverlay(overlay, decoded, originalWidth, originalHeight);
+        metrics.textContent = `Model: ready | Inference: ${(performance.now() - startedAt).toFixed(0)} ms | Detections: ${detections.length}`;
+      } catch (err) {
+        console.error('Inference error:', err);
+        statusDiv.textContent = `Inference error: ${err.message || 'unable to process frame.'}`;
+        statusDiv.style.color = '#ef4444';
+      } finally {
+        inferenceBusy = false;
+      }
+    }
+
+    async function decodeDetection(box, originalWidth, originalHeight, video) {
+      const x1 = Math.max(0, Math.floor(box[0] * originalWidth / DETECTOR_SIZE));
+      const y1 = Math.max(0, Math.floor(box[1] * originalHeight / DETECTOR_SIZE));
+      const x2 = Math.min(originalWidth, Math.ceil(box[2] * originalWidth / DETECTOR_SIZE));
+      const y2 = Math.min(originalHeight, Math.ceil(box[3] * originalHeight / DETECTOR_SIZE));
+      if (x2 <= x1 || y2 <= y1) return null;
+      cropCanvas.width = x2 - x1;
+      cropCanvas.height = y2 - y1;
+      cropContext.drawImage(video, x1, y1, x2 - x1, y2 - y1, 0, 0, cropCanvas.width, cropCanvas.height);
+      const angles = [0, 90, 180, 270];
+      for (const angle of angles) {
+        const source = angle === 0 ? cropCanvas : rotateCrop(angle);
+        try {
+          const result = await barcodeReader.decodeFromCanvas(source);
+          if (result && result.getText()) return normalizeBarcode(result.getText(), result.getBarcodeFormat());
+        } catch (_) {
+          // A failed rotation is expected while scanning; try the next orientation.
+        }
+      }
+      return null;
+    }
+
+    function rotateCrop(angle) {
+      const quarterTurn = angle === 90 || angle === 270;
+      rotationCanvas.width = quarterTurn ? cropCanvas.height : cropCanvas.width;
+      rotationCanvas.height = quarterTurn ? cropCanvas.width : cropCanvas.height;
+      rotationContext.save();
+      rotationContext.translate(rotationCanvas.width / 2, rotationCanvas.height / 2);
+      rotationContext.rotate(angle * Math.PI / 180);
+      rotationContext.drawImage(cropCanvas, -cropCanvas.width / 2, -cropCanvas.height / 2);
+      rotationContext.restore();
+      return rotationCanvas;
+    }
+
+    function normalizeBarcode(value, format) {
+      const text = String(value).trim();
+      const formatName = String(format || '').toUpperCase();
+      return /EAN_13|UPC_A/.test(formatName) && /^\d{12}$/.test(text) ? `0${text}` : text;
+    }
+
+    function drawOverlay(overlay, detections, originalWidth, originalHeight) {
+      overlay.width = originalWidth;
+      overlay.height = originalHeight;
+      const context = overlay.getContext('2d');
+      context.clearRect(0, 0, originalWidth, originalHeight);
+      context.lineWidth = Math.max(2, originalWidth / 320);
+      context.font = `${Math.max(14, originalWidth / 38)}px sans-serif`;
+      detections.forEach(({ box, score, value }) => {
+        const x = box[0] * originalWidth / DETECTOR_SIZE;
+        const y = box[1] * originalHeight / DETECTOR_SIZE;
+        const width = (box[2] - box[0]) * originalWidth / DETECTOR_SIZE;
+        const height = (box[3] - box[1]) * originalHeight / DETECTOR_SIZE;
+        const label = `${score.toFixed(2)}${value ? ` | ${value}` : ''}`;
+        context.strokeStyle = value ? '#22c55e' : '#facc15';
+        context.fillStyle = context.strokeStyle;
+        context.strokeRect(x, y, width, height);
+        context.fillText(label, x, Math.max(18, y - 6));
+      });
+    }
+
+    function clearOverlay() {
+      const overlay = document.getElementById('cameraScannerOverlay');
+      if (overlay) overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    function addScannerHistory(value) {
+      scannerHistory.unshift(value);
+      if (scannerHistory.length > MAX_HISTORY_ITEMS) scannerHistory.pop();
+      const history = document.getElementById('cameraScannerHistory');
+      if (history) history.textContent = scannerHistory.join(' | ');
     }
 
     async function onCameraBarcodeScanned(barcode) {
