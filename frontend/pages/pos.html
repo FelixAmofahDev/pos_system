@@ -887,7 +887,14 @@
         if (!inferenceSession) {
           if (!window.ort) throw new Error('ONNX Runtime failed to load from the CDN.');
           ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-          inferenceSession = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'] });
+          const modelUrl = new URL(MODEL_URL, document.baseURI).href;
+          const modelResponse = await fetch(modelUrl, { cache: 'no-store' });
+          if (!modelResponse.ok) {
+            throw new Error(`Detector model request failed (${modelResponse.status} ${modelResponse.statusText}) at ${modelUrl}`);
+          }
+          const modelBytes = await modelResponse.arrayBuffer();
+          if (modelBytes.byteLength === 0) throw new Error(`Detector model is empty at ${modelUrl}`);
+          inferenceSession = await ort.InferenceSession.create(modelBytes, { executionProviders: ['wasm'] });
         }
         const zxing = window.ZXingBrowser || window.ZXing;
         if (!zxing || !zxing.BrowserMultiFormatReader) throw new Error('ZXing failed to load from the CDN.');
