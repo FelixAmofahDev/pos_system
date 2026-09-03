@@ -569,7 +569,7 @@
 
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
+  <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
   <script src="../js/api.js"></script>
   <script>
     requireAuth();
@@ -889,8 +889,9 @@
           ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
           inferenceSession = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'] });
         }
-        if (!window.ZXingBrowser) throw new Error('ZXing failed to load from the CDN.');
-        barcodeReader = barcodeReader || new ZXingBrowser.BrowserMultiFormatReader();
+        const zxing = window.ZXingBrowser || window.ZXing;
+        if (!zxing || !zxing.BrowserMultiFormatReader) throw new Error('ZXing failed to load from the CDN.');
+        barcodeReader = barcodeReader || new zxing.BrowserMultiFormatReader();
         statusDiv.textContent = 'Scanning...';
         metrics.textContent = 'Model: ready | Inference: --';
         lastDetectionTime = 0;
