@@ -424,10 +424,12 @@
         <tr>
           <td>#${product.product_id}</td>
           <td>
-            <img src="${product.image_url || 'https://via.placeholder.com/40?text=No+Image'}"
-                 alt="${product.name}"
-                 onerror="this.src='https://via.placeholder.com/40?text=No+Image'"
-                 style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
+              ${product.image_url
+                ? `<img src="${product.image_url}"
+                  alt="${product.name}"
+                  onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('image-unavailable');"
+                  style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">`
+                : '<div class="image-unavailable" aria-label="No image" style="width: 40px; height: 40px; border-radius: 4px; background: #f1f5f9;"></div>'}
           </td>
           <td><strong>${product.name}</strong></td>
           <td>${product.category_name || 'N/A'}</td>

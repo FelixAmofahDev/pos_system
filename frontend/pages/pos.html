@@ -678,7 +678,9 @@
             <div class="category-products">
               ${categoryProducts.map(product => `
                 <div class="product-card" onclick="addToCart(${product.product_id})">
-                  <img src="${product.image_url || 'https://via.placeholder.com/150?text=No+Image'}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                  ${product.image_url
+                    ? `<img src="${product.image_url}" alt="${product.name}" class="product-image" onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('image-unavailable');">`
+                    : '<div class="product-image image-unavailable" aria-label="No image"></div>'}
                   <div class="product-info">
                     <div class="product-name">${product.name}</div>
                     <div class="product-barcode">${product.barcode || 'N/A'}</div>
