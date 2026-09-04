@@ -16,6 +16,11 @@ app.use(cors({
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
+app.use('/frontend/models', express.static(path.join(__dirname, '..', 'frontend', 'models'), {
+  maxAge: '1y',
+  immutable: true
+}));
+
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '..')));
 

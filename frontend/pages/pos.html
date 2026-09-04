@@ -887,26 +887,12 @@
         if (!inferenceSession) {
           if (!window.ort) throw new Error('ONNX Runtime failed to load from the CDN.');
           ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-          const modelUrls = [
-            new URL(`../${MODEL_PATH}`, document.baseURI).href,
-            new URL(`/frontend/${MODEL_PATH}`, window.location.origin).href,
-            new URL(`/${MODEL_PATH}`, window.location.origin).href
-          ];
-          let modelBytes = null;
-          const failedModelUrls = [];
-          for (const modelUrl of modelUrls) {
-            try {
-              const modelResponse = await fetch(modelUrl, { cache: 'no-store' });
-              if (modelResponse.ok) {
-                modelBytes = await modelResponse.arrayBuffer();
-                break;
-              }
-              failedModelUrls.push(`${modelResponse.status} ${modelUrl}`);
-            } catch (fetchError) {
-              failedModelUrls.push(`${fetchError.message || 'network error'} ${modelUrl}`);
-            }
+          const modelUrl = new URL(`../${MODEL_PATH}`, document.baseURI).href;
+          const modelResponse = await fetch(modelUrl);
+          if (!modelResponse.ok) {
+            throw new Error(`Detector model request failed (${modelResponse.status}).`);
           }
-          if (!modelBytes) throw new Error(`Detector model was not found. Tried: ${failedModelUrls.join(', ')}`);
+          const modelBytes = await modelResponse.arrayBuffer();
           if (modelBytes.byteLength === 0) throw new Error('Detector model is empty.');
           inferenceSession = await ort.InferenceSession.create(modelBytes, { executionProviders: ['wasm'] });
         }

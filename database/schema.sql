@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS sales (
   discount_amount DECIMAL(10, 2) DEFAULT 0,
   tax_amount DECIMAL(10, 2) DEFAULT 0,
   final_amount DECIMAL(15, 2) NOT NULL,
-  status ENUM('completed', 'cancelled', 'returned') DEFAULT 'completed',
+  status ENUM('pending', 'completed', 'cancelled', 'returned') DEFAULT 'completed',
   notes TEXT,
   sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS daily_reports (
 
 -- Seed Admin User (password: admin123 - hashed with bcrypt)
 INSERT INTO users (username, email, password, role) VALUES
-('admin', 'admin@possystem.com', '$2b$10$YJVGZfzJvvYnB.q2kJqkNu0QzQ2q/25K2qd3L6m3D7K5A1KqKQPym', 'admin');
+('admin', 'admin@possystem.com', '$2a$10$lV/ofrkz1iOsfJnI67KXq.OR1pdGJvHfwS5yVcf7Rlf3CJtHxhYZ2', 'admin');
 
 -- Seed Categories
 INSERT INTO categories (name, description) VALUES
