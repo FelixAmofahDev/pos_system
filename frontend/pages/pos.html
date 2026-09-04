@@ -580,7 +580,7 @@
     let categories = [];
     let currentReceiptData = null; // Store receipt data for printing
     const MODEL_PATH = 'models/barcode_detector.simplified.onnx';
-    const SCORE_THRESHOLD = 0.25;
+    const SCORE_THRESHOLD = 0.05;
     const DETECTION_INTERVAL_MS = 180;
     const DETECTOR_SIZE = 320;
     const MAX_HISTORY_ITEMS = 8;
@@ -977,6 +977,7 @@
         if (!cameraScanning || scanSessionId !== currentSessionId) return;
         const boxes = outputs.boxes.data;
         const scores = outputs.scores.data;
+        console.log('raw scores:', Array.from(scores).slice(0, 10));
         const labels = outputs.labels.data;
         const detectionCount = outputs.num_detections
           ? Math.min(scores.length, Math.round(outputs.num_detections.data[0]))
