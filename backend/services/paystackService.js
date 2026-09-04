@@ -3,8 +3,8 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
-const PAYSTACK_SECRET_KEY = process.env.LIVE_SECRET_KEY;
-const PAYSTACK_PUBLIC_KEY = process.env.LIVE_PUBLIC_KEY || 'pk_test_4e9455f5c10d035989ed3674207c6de54fc77bb2';
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_4e9455f5c10d035989ed3674207c6de54fc77bb2';
 const PAYSTACK_CURRENCY = process.env.PAYSTACK_CURRENCY || 'GHS'; // Ghana Cedis
 const CURRENCY_CODE = process.env.CURRENCY_CODE || 'GHS';
 const CURRENCY_SYMBOL = process.env.CURRENCY_SYMBOL || '₵';

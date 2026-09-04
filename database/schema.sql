@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS products (
   name VARCHAR(150) NOT NULL,
   category_id INT NOT NULL,
   barcode VARCHAR(100) UNIQUE,
+  image_url VARCHAR(2000) NULL,
   price DECIMAL(10, 2) NOT NULL,
   quantity INT DEFAULT 0,
   reorder_level INT DEFAULT 10,
