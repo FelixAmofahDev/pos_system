@@ -978,10 +978,19 @@
         const boxes = outputs.boxes.data;
         const scores = outputs.scores.data;
         const labels = outputs.labels.data;
+        const detectionCount = outputs.num_detections
+          ? Math.min(scores.length, Math.round(outputs.num_detections.data[0]))
+          : scores.length;
         const detections = [];
-        for (let index = 0; index < scores.length; index++) {
-          if (scores[index] >= SCORE_THRESHOLD && labels[index] === 1) {
-            detections.push({ box: boxes.slice(index * 4, index * 4 + 4), score: scores[index] });
+        for (let index = 0; index < detectionCount; index++) {
+          if (scores[index] >= SCORE_THRESHOLD) {
+            const box = boxes.slice(index * 4, index * 4 + 4);
+            const normalized = Math.max(...box) <= 1;
+            detections.push({
+              box: normalized ? box.map(coordinate => coordinate * DETECTOR_SIZE) : box,
+              score: scores[index],
+              label: labels[index]
+            });
           }
         }
         const decoded = [];
@@ -995,7 +1004,8 @@
           }
         }
         drawOverlay(overlay, decoded, originalWidth, originalHeight);
-        metrics.textContent = `Model: ready | Inference: ${(performance.now() - startedAt).toFixed(0)} ms | Detections: ${detections.length}`;
+        const maxScore = scores.length ? Math.max(...scores).toFixed(2) : '0.00';
+        metrics.textContent = `Model: ready | Inference: ${(performance.now() - startedAt).toFixed(0)} ms | Detections: ${detections.length} | Score: ${maxScore}`;
       } catch (err) {
         console.error('Inference error:', err);
         statusDiv.textContent = `Inference error: ${err.message || 'unable to process frame.'}`;
